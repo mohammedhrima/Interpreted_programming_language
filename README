@@ -1,0 +1,32 @@
+- Mar 11, 01:29
+- build an AI,
+- build IDE
+
++ implements some algorithms in the future
++ man for algorithms
++ LLAMA, Occs, tools to visualize parsing
+
+
+- compiler :
+    program contains chunks called passes
+    create an image from source code file , (proessing, assembly, linking)
+
+- Lexical Analyzer:
+    take token, while. for, >= >> ...
+    turn them to tree
+
+- temporary varibales to hold value while changing
+- BNF: Backus-Naur Form : end of line
+
+
+$ : end of symbol
+
+statements -> expression;$ | expression;$ statement
+expression -> term expression' 
+expression' -> +term expression' | eps
+term -> factor term'
+term' -> *factor term' | eps
+factor -> NUM_OR_ID  | expression
+
+- use temporary varibales
+- should be reeused
