@@ -93,32 +93,21 @@ char **split(char *str)
     return (res);
 }
 
-int ft_strcmp(char *str1, char *str2)
-{
-    int i = 0;
-    while (str1 && str2 && str1[i] && str1[i] == str2[i])
-        i++;
-    return (str1[i] - str2[i]);
-}
-
 char *heap_pointer(char *str)
 {
     int len = ft_strlen(str);
-    char *res = malloc(len + 2);
-    memset(res, 0, len + 1);
-    int i = 1;
+    char *res = malloc(len + 4);
+    memset(res, 0, len + 4);
+    int i = 2;
     int j = 0;
-    // res[i++] = '(';
-    res[0] = '*';
-    while (i < len + 1)
+    res[0] = '(';
+    res[1] = '*';
+    while (i < len + 2)
     {
-        res[i] = str[i - 1];
-        // printf("copy -> %c\n", str[i - 1]);
+        res[i] = str[i - 2];
         i++;
-        // j++;
     }
-    // res[i] = ')';
-    res[i] = '\0';
+    res[i] = ')';
     return (res);
 }
 
@@ -129,7 +118,6 @@ char *stack_pointer(char *str, char *size)
     memset(res, 0, len + 3);
     int i = 0;
     int j = 0;
-    // res[i++] = '(';
     while (str && str[i])
     {
         res[i] = str[i];
@@ -144,27 +132,30 @@ char *stack_pointer(char *str, char *size)
         j++;
     }
     res[i + j] = ']';
-    res[i + j + 1] = '\0';
     return (res);
 }
-int word_counter(char *str, char *to_find)
+
+char *function(char *str, char *return_type)
 {
+    int len = ft_strlen(str) + ft_strlen(return_type) + 2;
+    char *res = malloc(len + 3);
+    memset(res, 0, len + 3);
     int i = 0;
     int j = 0;
-    int c = 0;
-    while (str && str[i])
+    while (return_type && return_type[i])
     {
-        if (str[i] == to_find[0])
-        {
-            j = 0;
-            while (to_find && to_find[j] && to_find[j] == str[i + j])
-                j++;
-            if (to_find[j] == '\0')
-                c++;
-        }
+        res[i] = return_type[i];
         i++;
     }
-    return (c);
+    res[i++] = ' ';
+    while (str && str[j])
+    {
+        res[i + j] = str[j];
+        j++;
+    }
+    res[i + j] = '(';
+    res[i + j + 1] = ')';
+    return (res);
 }
 
 int is_number(char *str)
@@ -185,6 +176,7 @@ int main(void)
     int valid;
     char **arr;
     int i = 0;
+    int j = 0;
     char *res;
     int there_is_number;
     int n = -1;
@@ -197,9 +189,7 @@ int main(void)
     while (1)
     {
         valid = 0;
-        there_is_number = 0;
         str = readline();
-
         if (str == NULL)
             valid = 0;
         else
@@ -209,14 +199,36 @@ int main(void)
             i = 1;
             while (arr && arr[i])
             {
-                if (arr[i][0] == 'p' && strstr(arr[i], "pointer"))
+                if (strncmp(arr[i], "array", ft_strlen("array") - 1) == 0)
                 {
-                    if (is_number(arr[i - 1]))
-                        str = stack_pointer(str, arr[i - 1]);
-                    else
-                        str = heap_pointer(str);
+                    j = i;
+                    while (arr[j] && !is_number(arr[j]))
+                        j++;
+                    if (arr[j] == NULL)
+                        arr[j] = "0";
+                    // printf("stack pointer with size %s\n", arr[j]);
+                    str = stack_pointer(str, arr[j]);
                 }
-                there_is_number = 0;
+                if (strncmp(arr[i], "pointer", ft_strlen("pointer") - 1) == 0)
+                {
+                    // printf("heap pointer with size %s\n", arr[j]);
+                    str = heap_pointer(str);
+                }
+                if (strncmp(arr[i], "function", ft_strlen("function") - 1) == 0)
+                {
+                    // printf("function\n");
+                    char *return_type = NULL;
+                    j = i;
+                    while (arr[j] && strncmp(arr[j], "return", ft_strlen("return") - 1))
+                        j++;
+                    if (strncmp(arr[j], "return", ft_strlen("return") - 1) == 0)
+                    {
+                        i = j + 1;
+                        return_type = arr[j + 1];
+                        printf("\'%s\' function that return \'%s\'\n", str, return_type);
+                    }
+                    str = function(str, return_type);
+                }
                 i++;
             }
             printf("-> %s\n", str);
