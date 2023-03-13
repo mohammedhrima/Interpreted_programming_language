@@ -89,4 +89,3 @@ int main(void)
             printf("not valid data type\n");
     }
 }
-
