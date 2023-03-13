@@ -113,8 +113,10 @@ char *heap_pointer(char *str)
 
 char *stack_pointer(char *str, char *size)
 {
+    // if (!size)
+    //     size = "0";
     int len = ft_strlen(str) + ft_strlen(size);
-    char *res = malloc(len + 3);
+    char *res = malloc((len + 3) * sizeof(char));
     memset(res, 0, len + 3);
     int i = 0;
     int j = 0;
@@ -138,23 +140,24 @@ char *stack_pointer(char *str, char *size)
 char *function(char *str, char *return_type)
 {
     int len = ft_strlen(str) + ft_strlen(return_type) + 2;
-    char *res = malloc(len + 3);
-    memset(res, 0, len + 3);
-    int i = 0;
-    int j = 0;
-    while (return_type && return_type[i])
-    {
-        res[i] = return_type[i];
-        i++;
-    }
-    res[i++] = ' ';
-    while (str && str[j])
-    {
-        res[i + j] = str[j];
-        j++;
-    }
-    res[i + j] = '(';
-    res[i + j + 1] = ')';
+    char *res = malloc((len + 3) * sizeof(char));
+    memset(res, 0, (len + 3) * sizeof(char));
+    strcpy(res, return_type);
+    res[ft_strlen(return_type)] = ' ';
+    strcpy(res + ft_strlen(return_type) + 1 , str);
+    res[ft_strlen(res)] = '(';
+    res[ft_strlen(res)] = ')';
+    return (res);
+}
+
+char *structure(char *str)
+{
+    int len = ft_strlen(str) + ft_strlen("struct ") + 1;
+    char *res = malloc(len * sizeof(char));
+    memset(res, 0, len * sizeof(char));
+    strcpy(res, "struct ");
+    res[ft_strlen("struct ")] = ' ';
+    strcpy(res + ft_strlen("struct "), str);
     return (res);
 }
 
@@ -189,6 +192,7 @@ int main(void)
     while (1)
     {
         valid = 0;
+        write(1, "> ", 2);
         str = readline();
         if (str == NULL)
             valid = 0;
@@ -204,8 +208,8 @@ int main(void)
                     j = i;
                     while (arr[j] && !is_number(arr[j]))
                         j++;
-                    if (arr[j] == NULL)
-                        arr[j] = "0";
+                    // if (arr[j] == NULL)
+                    //     arr[j] = "0";
                     // printf("stack pointer with size %s\n", arr[j]);
                     str = stack_pointer(str, arr[j]);
                 }
@@ -221,17 +225,20 @@ int main(void)
                     j = i;
                     while (arr[j] && strncmp(arr[j], "return", ft_strlen("return") - 1))
                         j++;
-                    if (strncmp(arr[j], "return", ft_strlen("return") - 1) == 0)
+                    if (arr[j] && strncmp(arr[j], "return", ft_strlen("return") - 1) == 0)
                     {
                         i = j + 1;
                         return_type = arr[j + 1];
-                        printf("\'%s\' function that return \'%s\'\n", str, return_type);
+                        // printf("\'%s\' function that return \'%s\'\n", str, return_type);
                     }
                     str = function(str, return_type);
                 }
+                if (strncmp(arr[i], "struct", ft_strlen("struct") - 1) == 0)
+                {
+                }
                 i++;
             }
-            printf("-> %s\n", str);
+            printf("> %s\n", str);
         }
         // if (valid)
         //     printf("valid data type\n");
