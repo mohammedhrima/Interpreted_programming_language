@@ -2,6 +2,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
+#include <ctype.h>
 #define INT "int"
 #define CHAR "char"
 #define LONG "long"
@@ -159,6 +161,8 @@ char *structure(char *str, char *type)
     return (res);
 }
 
+// int is_digit
+
 int is_number(char *str)
 {
     int i = 0;
@@ -307,10 +311,7 @@ int main(void)
                     str = structure(str, type);
                 }
                 if (strstr(arr[i], "++") != NULL || strstr(arr[i], "--") != NULL)
-                {
-                    // printf("-->\n");
                     str = increment_decrement(atoi(arr[i]), arr[i]);
-                }
                 i++;
             }
             if (strcmp("clear", str))
