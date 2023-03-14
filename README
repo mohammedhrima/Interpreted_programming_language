@@ -1,4 +1,5 @@
-- Mar 11, 01:29
+986 / 30 => 30 page per day
+- Mar 11, 01:29 -> April 11
 - build an AI,
 - build IDE
 
@@ -32,3 +33,9 @@ factor -> NUM_OR_ID  | expression
 - should be reeused
 
 Lex:
+
+"Let's Build a Compiler" by Jack Crenshaw: This is a classic tutorial that walks you through the process of building a simple compiler from scratch. It's written in a friendly, accessible style and assumes no prior knowledge of compiler development. The tutorial is available online for free at http://compilers.iecc.com/crenshaw/.
+
+"Writing a Compiler in C" by Robert Swierczek: This is another tutorial that walks you through the process of building a simple compiler in C. It's more in-depth than Crenshaw's tutorial and assumes some knowledge of programming concepts, but it's still very approachable. The tutorial is available online for free at https://norasandler.com/2017/11/29/Write-a-Compiler.html.
+
+"Crafting Interpreters" by Bob Nystrom: While not specifically focused on compiler development, this book walks you through the process of building a simple programming language interpreter from scratch using C. It covers many of the same concepts as compiler development and is written in a clear, approachable style. The book is available online for free at https://craftinginterpreters.com/.
