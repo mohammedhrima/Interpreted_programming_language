@@ -53,7 +53,7 @@ char *readline(void)
     return (res);
 }
 
-char **split(char *str)
+char **split(char *str, char c)
 {
     int i = 0;
     int j = 0;
@@ -61,14 +61,14 @@ char **split(char *str)
     int l = 0;
     int len = 0;
     char **res = NULL;
-    while (str && str[i] && str[i] == ' ')
+    while (str && str[i] && str[i] == c)
         i++;
     while (str && str[i])
     {
-        while (str[i] && str[i] != ' ')
+        while (str[i] && str[i] != c)
             i++;
         len++;
-        while (str[i] && str[i] == ' ')
+        while (str[i] && str[i] == c)
             i++;
     }
     res = malloc(sizeof(char *) * (len + 1));
@@ -76,10 +76,10 @@ char **split(char *str)
     j = 0;
     while (j < len)
     {
-        while (str && str[i] && str[i] == ' ')
+        while (str && str[i] && str[i] == c)
             i++;
         k = i;
-        while (str && str[k] && str[k] != ' ')
+        while (str && str[k] && str[k] != c)
             k++;
         res[j] = malloc((k - i + 2) * sizeof(char));
         l = 0;
@@ -251,12 +251,33 @@ char *increment_decrement(int number, char *str)
     return (ft_itoa(num));
 }
 
+void putcharacter(char c)
+{
+    write(1, &c, sizeof(char));
+}
+
+void putstring(char *str, char c, char *exclude)
+{
+    int i = 0;
+    while (str && str[i])
+    {
+        if (exclude == NULL || !strrchr(exclude, str[i]))
+            putcharacter(str[i]);
+        i++;
+    }
+    putcharacter(c);
+}
+
 int main(void)
 {
-    printf("\n============= start =============\n");
+    putstring("\n============= start =============\n", 0, 0);
     char *str;
     int valid;
-    char **arr;
+    char **arr0;
+    char **arr1;
+    char **arr2;
+    char **arr3;
+
     int i = 0;
     int j = 0;
 
@@ -264,59 +285,35 @@ int main(void)
     while (1)
     {
         valid = 0;
-        write(1, "> ", 2);
+        putstring("\n> ", 0, 0);
         str = readline();
         if (strncmp(str, "clear", ft_strlen("clear") - 1) == 0)
             system("clear");
-        if (strncmp(str, "exit", ft_strlen("exit") - 1) == 0)
+        else if (strncmp(str, "exit", ft_strlen("exit") - 1) == 0)
             exit(0);
-        if (str == NULL)
-            valid = 0;
+        // esif (str == NULL)
+        //     valid = 0;
         else
         {
-            arr = split(str);
-            str = arr[0]; // name of variable
+            arr0 = split(str, '*');
             i = 0;
-            while (arr && arr[i])
+            while (arr0 && arr0[i])
             {
+                // printf("%s \n", arr0[i]);
                 j = 0;
-                while (argument[j])
+                arr1 = split(arr0[i], '+');
+                while (arr1[j])
                 {
-                    if (ft_strlen(argument[j]) == ft_strlen(arr[i]) && strncmp(argument[j], arr[i], ft_strlen(argument[j])) == 0)
-                    {
-                        str = set_data_type(str, argument[j]);
-                        break;
-                    }
+
+                    putstring(arr1[j], ' ', "()");
                     j++;
                 }
-                if (strncmp(arr[i], "array", ft_strlen("array") - 1) == 0)
-                {
-                    j = i;
-                    while (arr[j] && !is_number(arr[j]))
-                        j++;
-                    str = stack_pointer(str, arr[j]);
-                }
-                if (strncmp(arr[i], "pointer", ft_strlen("pointer") - 1) == 0)
-                    str = heap_pointer(str);
-                if (strncmp(arr[i], "function", ft_strlen("function") - 1) == 0)
-                    str = function(str);
-                if (strncmp(arr[i], "struct", ft_strlen("struct") - 1) == 0)
-                {
-                    char *type = NULL;
-                    int j = i;
-                    while (arr[j] && strcmp(arr[j], "type")) // to be seen after
-                        j++;
-                    if (arr[j])
-                        type = arr[j + 1];
-                    str = structure(str, type);
-                }
-                if (strstr(arr[i], "++") != NULL || strstr(arr[i], "--") != NULL)
-                    str = increment_decrement(atoi(arr[i]), arr[i]);
+                putstring("+", ' ', 0);
                 i++;
             }
+            putstring("*", ' ', 0);
             if (strcmp("clear", str))
                 printf(" %s \n", str);
-            
         }
         // if (valid)
         //     printf("valid data type\n");

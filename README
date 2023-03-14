@@ -30,3 +30,5 @@ factor -> NUM_OR_ID  | expression
 
 - use temporary varibales
 - should be reeused
+
+Lex:
