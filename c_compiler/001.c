@@ -5,7 +5,7 @@
 
 int main(int argc, char **argv)
 {
-    int fd = open("file.asm", O_CREAT | O_TRUNC | O_RDWR);
+    int fd = open("001.asm", O_CREAT | O_TRUNC | O_RDWR);
     dup2(fd, STDOUT_FILENO);
     if (argc != 2)
     {
