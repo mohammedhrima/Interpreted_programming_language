@@ -25,16 +25,18 @@ int main(int argc, char **argv)
     {
         if (*p == '+')
         {
-            p++;
+            // p++;
             printf("    add rax, %ld\n", strtol(p, &p, 10));
         }
-        if (*p == '-')
+        else if (*p == '-')
         {
-            p++;
+            // p++;
             printf("    sub rax, %ld\n", strtol(p, &p, 10));
         }
-        fprintf(stderr, "Error bi ljaponiya %c\n", *p);
-        return 1;
+        else
+            fprintf(stderr, "Error bi ljaponiya %c\n", *p);
+        p++;
+        // return 1;
     }
     printf("        ret\n");
     // close assembly file
