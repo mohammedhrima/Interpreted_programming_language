@@ -88,7 +88,7 @@ Token *new_token(TokenKind kind, Token *curr, char *str)
 {
     Token *tok = calloc(1, sizeof(Token));
     tok->kind = kind;
-    tok->str = str; 
+    tok->str = str;
     curr->next = tok;
     return tok;
 }
@@ -131,22 +131,29 @@ typedef enum
     ND_SUB, // -
     ND_MUL, // *
     ND_DIV, // /
-    ND_NUM // integer
+    ND_NUM  // integer
 } NodeKind;
 
 // structs
 typedef struct Node
 {
     NodeKind kind;
-    Node *lhs; // left hand
-    Node *rhs; // right hand
+    struct Node *lhs; // left hand
+    struct Node *rhs; // right hand
     int val;   // value
 } Node;
 
-Node *new_node(NodeKind kind, Node *lhs, Node *rhs)
+// init functions
+Node *new_node(NodeKind kind)
 {
     Node *node = calloc(1, sizeof(Node));
     node->kind = kind;
+    return node;
+}
+
+Node *new_binary(NodeKind kind, Node *lhs, Node *rhs)
+{
+    Node *node = new_node(kind);
     node->lhs = lhs;
     node->rhs = rhs;
     return node;
@@ -154,38 +161,25 @@ Node *new_node(NodeKind kind, Node *lhs, Node *rhs)
 
 Node *new_num(int val)
 {
-    Node *node = calloc(1, sizeof(Node));
-    node->kind = ND_NUM;
+    Node *node = new_node(ND_NUM);
     node->val = val;
     return node;
 }
 
-Node *new_binary(NodeKind kind, Node *lhs, Node *rhs)
-{
-    Node *node = calloc(1, sizeof(Node));
-    node->lhs = lhs;
-    node->rhs = rhs;
-    return node;
-}
+Node *expr(void);
+Node *mul(void);
+Node *primary(void);
 
-
-
-
-
-
-
-
-// expression for additin and substraction
 // expr = mul ("+" mul | "-" mul)*
 Node *expr()
 {
-    Node *node = mull();
+    Node *node = mul();
     while (1)
     {
         if (consume('+'))
-            node = new_node(ND_ADD, node, mul());
+            node = new_binary(ND_ADD, node, mul());
         else if (consume('-'))
-            node = new_node(ND_SUB, node, mul());
+            node = new_binary(ND_SUB, node, mul());
         else
             return node;
     }
@@ -199,9 +193,9 @@ Node *mul()
     while (1)
     {
         if (consume('*'))
-            node = new_node(ND_MUL, node, primary());
+            node = new_binary(ND_MUL, node, primary());
         else if (consume('/'))
-            node = new_node(ND_DIV, node, primary());
+            node = new_binary(ND_DIV, node, primary());
         else
             return node;
     }
@@ -236,26 +230,18 @@ void gen(Node *node)
     switch (node->kind)
     {
     case ND_ADD:
-    {
         printf("    add rax, rdi\n");
         break;
-    }
     case ND_SUB:
-    {
         printf("    sub rax, rdi\n");
         break;
-    }
     case ND_MUL:
-    {
         printf("    imul rax, rdi\n");
         break;
-    }
     case ND_DIV:
-    {
         printf("    cqo\n");
         printf("    idiv rdi\n");
         break;
-    }
     }
     printf("    push rax\n");
 }
@@ -263,10 +249,7 @@ void gen(Node *node)
 int main(int argc, char **argv)
 {
     if (argc != 2)
-    {
-        error("error 4 bi ljaponiya\n");
-        return 1;
-    }
+        error("%s: invalid number of arguments", argv[0]);
 
     // Tokenize and prse
     user_input = argv[1];
@@ -281,10 +264,8 @@ int main(int argc, char **argv)
     // build the assembly body
     gen(node);
 
-    /*
-    A result must be at the top of the stack so pop it
-    to rax to make it a program exit code
-    */
+    // A result must be at the top of the stack, so pop it
+    // to RAX to make it a program exit code.
     printf("    pop rax\n");
     printf("    ret\n");
     return (0);
