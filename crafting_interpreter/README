@@ -1,0 +1,9 @@
+compiler -> Bytecode -> Virtual machine
+
+- chunk: will be used as follow
+    allocate for example 4.
+    when the 4 are full, allocate 8 and copy the 4 to 8
+    and free 4
+
+chapter 14:
+    - line information
