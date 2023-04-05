@@ -1,2 +1,2 @@
-*.dSYM
-*/*.dSYM
+**/*.dSYM
+**/a.out

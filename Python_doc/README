@@ -17,3 +17,26 @@ target:
             writeln(n, '! = ', factorial(n));
     end.
 
+Part 4:
+
+case 3:
+    expr
+    factor ((MUL | DIV) factor)*
+    factor
+    INTEGER
+
+case 3 * 7:
+    expr
+    factor ((MUL | DIV) factor)*
+    factor MUL factor
+    INTEGER MUL INTEGER
+
+case 3 * 7 / 2:
+    expr
+    factor ((MUL | DIV) factor)*
+    factor MUL factor ((MUL | DIV) factor)*
+    factor MUL factor DIV factor
+    INTEGER MUL INTEGER DIV INTEGER
+
+
+my programing language should support data types
