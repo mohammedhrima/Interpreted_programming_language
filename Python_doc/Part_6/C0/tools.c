@@ -60,7 +60,7 @@ void ft_fprintf(int fd, char *fmt, ...)
         i++;
     }
     va_end(ap);
-    if(fd == STDERR_FILENO)
+    if(fd == err)
         exit(1);
 }
 
@@ -85,12 +85,18 @@ void ft_strcpy(char *dest, char *src)
     }
 }
 
+char *ft_strdup(char *str){
+    char *res = calloc(ft_strlen(str), sizeof(char));
+    ft_strcpy(res,str);
+    return(res);
+}
+
 char *strjoin(char *string1, char *string2)
 {
     char *res = calloc(ft_strlen(string1) + ft_strlen(string2) + 1, sizeof(char));
     if (res == NULL)
     {
-        ft_fprintf(STDERR_FILENO, "malloc failed in strjoin");
+        ft_fprintf(err, "malloc failed in strjoin");
         exit(1);
     }
     ft_strcpy(res, string1);

@@ -1,5 +1,12 @@
+import signal
+
+
+def handler(sig, frame):
+    exit(0)
+
+
 INTEGER, PLUS, MINUS, MUL, DIV, LPARENT, RPARENT, EOF = (
-    'INTEGER', 'PLUS', 'MINUS', 'MUL', 'DIV', 'LPARENT', 'RPARENT' 'EOF')
+    'INTEGER', 'PLUS', 'MINUS', 'MUL', 'DIV', '(', ')', 'EOF')
 
 
 class Token(object):
@@ -60,6 +67,12 @@ class Lexer(object):
             if self.current_char == '-':
                 self.advance()
                 return Token(MINUS, '-')
+            if self.current_char == '(':
+                self.advance()
+                return Token(LPARENT, '(')
+            if self.current_char == ')':
+                self.advance()
+                return Token(RPARENT, ')')
             self.error()
         return Token(EOF, None)
 
@@ -81,8 +94,14 @@ class Interpreter(object):
     # factor : INTEGER
     def factor(self):
         token = self.current_token
-        self.eat(INTEGER)
-        return token.value
+        if token.type == INTEGER:
+            self.eat(INTEGER)
+            return token.value
+        elif token.type == LPARENT:
+            self.eat(LPARENT)
+            result = self.expr()
+            self.eat(RPARENT)
+            return result
 
     # term : factor ((MUL | DIV) factor)
     def term(self):
@@ -112,6 +131,7 @@ class Interpreter(object):
 
 
 def main():
+    signal.signal(signal.SIGINT, handler)
     while True:
         try:
             text = input("py_calc $> ")
