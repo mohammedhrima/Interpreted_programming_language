@@ -1,10 +1,4 @@
-#include <stdio.h>
-#include <ctype.h>
-#include <string.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/uio.h>
-#include <unistd.h>
+ç
 
 typedef enum
 {
@@ -25,7 +19,7 @@ typedef union
 typedef struct
 {
     Token_type type;
-    char *value;
+    var *value;
 } Token;
 
 typedef struct
@@ -38,7 +32,6 @@ typedef struct
 {
     Lexer *lexer;
     Token *current_token;
-    // char current_char;
 } Interpreter;
 
 void putstr(char *str)
@@ -85,10 +78,11 @@ char *readline(int fd)
     return res;
 }
 
-Token *new_token(Token_type type, char *value)
+Token *new_token(Token_type type, char *value_string)
 {
     Token *new = malloc(sizeof(Token));
-    new->value = value;
+    new->value = malloc(sizeof(var));
+    new->value->string = value_string;
     new->type = type;
     return (new);
 }
@@ -144,7 +138,7 @@ Token *get_next_token(Lexer *self)
 {
     while (self->text[self->position])
     {
-        printf("line 130: => %c\n", self->text[self->position]);
+        printf("=> %c\n", self->text[self->position]);
         if (isspace(self->text[self->position]))
         {
             skip_whitespace(self);
@@ -185,58 +179,74 @@ void eat(Interpreter *self, Token_type token_type)
         error("Error parsing input");
 }
 
-char *factor(Interpreter *self)
+var *factor(Interpreter *self)
 {
     Token *token = self->current_token;
     eat(self, INTEGER_TOK);
+    token->value->integer = atoi(token->value->string);
     return token->value;
 }
 
-var *expr(Interpreter *self)
+var *term(Interpreter *self)
 {
     // get first number and move current token to next token
-    var *new = calloc(1, sizeof(var));
     if (self == NULL)
         error("error self is null\n");
-
-    self->current_token = get_next_token(self->lexer);
-    new->integer = atoi(factor(self));
+    var *new = factor(self);
     while (1)
     {
         switch (self->current_token->type)
         {
-        case PLUS_TOK:
-            eat(self, PLUS_TOK);
-            new->integer += atoi(factor(self));
-            // printf("PLUS: res: %d\n", new->integer);
-            break;
-        case MINUS_TOK:
-            eat(self, MINUS_TOK);
-            new->integer -= atoi(factor(self));
-            // printf("MINUS: res: %d\n", new->integer);
-            break;
         case MULTIPLY_TOK:
             eat(self, MULTIPLY_TOK);
-            new->integer *= atoi(factor(self));
+            new->integer *= factor(self)->integer;
             // printf("MULTIPLY: res: %d\n", new->integer);
             break;
         case DIVIDE_TOK:
             eat(self, DIVIDE_TOK);
-            new->integer /= atoi(factor(self));
+            new->integer /= factor(self)->integer;
             // printf("DEVIDE: res: %d\n", new->integer);
             break;
         default:
             return new;
         }
     }
-    return new;
+    return NULL;
+}
+
+var *expr(Interpreter *self)
+{
+    if (self == NULL)
+        error("error self is null\n");
+
+    self->current_token = get_next_token(self->lexer); // get first token
+    var *new = term(self);
+    while (1)
+    {
+        switch (self->current_token->type)
+        {
+        case PLUS_TOK:
+            eat(self, PLUS_TOK);
+            new->integer += term(self)->integer;
+            // printf("PLUS: res: %d\n", new->integer);
+            break;
+        case MINUS_TOK:
+            eat(self, MINUS_TOK);
+            new->integer -= term(self)->integer;
+            // printf("MINUS: res: %d\n", new->integer);
+            break;
+        default:
+            return new;
+        }
+    }
+    return NULL;
 }
 
 int main(void)
 {
     while (1)
     {
-        putstr("calcul $> ");
+        putstr("c_calc $> ");
         char *text = readline(STDIN_FILENO);
         printf("text = %s\n", text);
         if (text)
