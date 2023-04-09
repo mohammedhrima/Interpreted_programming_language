@@ -161,22 +161,4 @@ var *expr(Interpreter *self)
     return new;
 }
 
-int main(void)
-{
-    while (1)
-    {
-        ft_fprintf(out, "c_calc $> ");
-        char *text = readline(in);
-        if (text)
-        {
-            if (text[0] == '\0' || text[0] == '\n')
-                break;
-            text[ft_strlen(text) - 1] = '\0'; // replace '\n' with '\0'
-            ft_fprintf(out, "text: %s\n", text);
-            Interpreter *interpreter = new_interpreter(text);
-            var *res = expr(interpreter);
-            ft_fprintf(out, "-> %d\n", res->integer);
-        }
-        free(text);
-    }
-}
+ç

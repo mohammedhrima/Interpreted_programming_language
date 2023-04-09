@@ -1,12 +1,11 @@
 import signal
 
+INTEGER, PLUS, MINUS, MUL, DIV, LPARENT, RPARENT, EOF = (
+    'INTEGER', 'PLUS', 'MINUS', 'MUL', 'DIV', '(', ')', 'EOF')
+
 
 def handler(sig, frame):
     exit(0)
-
-
-INTEGER, PLUS, MINUS, MUL, DIV, LPARENT, RPARENT, EOF = (
-    'INTEGER', 'PLUS', 'MINUS', 'MUL', 'DIV', '(', ')', 'EOF')
 
 
 class Token(object):
@@ -25,54 +24,44 @@ class Lexer(object):
     def __init__(self, text):
         self.text = text
         self.position = 0
-        self.current_char = self.text[self.position]
 
     def error(self):
         raise Exception("Invalid character")
 
     def advance(self):
-        self.position += 1
-        if self.position > len(self.text) - 1:
-            self.current_char = None
-        else:
-            self.current_char = self.text[self.position]
+        if self.position < len(self.text) - 1:
+            self.position += 1
 
     def skip_white_space(self):
-        while self.current_char is not None and self.current_char.isspace():
+        while self.text[self.position] is not None and self.text[self.position].isspace():
             self.advance()
 
     def integer(self):
         result = ''
-        while self.current_char is not None and self.current_char.isdigit():
-            result += self.current_char
+        while self.text[self.position] is not None and self.text[self.position].isdigit():
+            result += self.text[self.position]
             self.advance()
         return (int(result))
 
     def get_next_token(self):
-        while self.current_char is not None:
-            if self.current_char.isspace():
+        while self.text[self.position]:
+            if self.text[self.position].isspace():
                 self.skip_white_space()
                 continue
-            if self.current_char.isdigit():
+            if self.text[self.position].isdigit():
                 return Token(INTEGER, self.integer())
-            if self.current_char == '*':
+            if self.text[self.position] == '*':
                 self.advance()
                 return Token(MUL, '*')
-            if self.current_char == '/':
+            if self.text[self.position] == '/':
                 self.advance()
                 return Token(DIV, '/')
-            if self.current_char == '+':
+            if self.text[self.position] == '+':
                 self.advance()
                 return Token(PLUS, '+')
-            if self.current_char == '-':
+            if self.text[self.position] == '-':
                 self.advance()
                 return Token(MINUS, '-')
-            if self.current_char == '(':
-                self.advance()
-                return Token(LPARENT, '(')
-            if self.current_char == ')':
-                self.advance()
-                return Token(RPARENT, ')')
             self.error()
         return Token(EOF, None)
 
@@ -85,48 +74,51 @@ class Interpreter(object):
     def error(self):
         raise Exception("Invalid syntax")
 
-    def eat(self, token_type):
+    # move to next token if found this token
+    # otherwise throw error
+    def skip_token(self, token_type):
         if self.current_token.type == token_type:
             self.current_token = self.lexer.get_next_token()
         else:
             self.error()
 
-    # factor : INTEGER | expr
+    # factor: INTEGER | expr
     def factor(self):
         token = self.current_token
+        print("token is " , token.value, "it's type is ", token.type)
         if token.type == INTEGER:
-            self.eat(INTEGER)
+            self.skip_token(INTEGER)
+            print("after skiping token")
+            print("self.token is ", self.current_token.value, " it's type is ",self.current_token.type)
             return token.value
-        elif token.type == LPARENT:
-            self.eat(LPARENT)
-            result = self.expr()
-            self.eat(RPARENT)
-            return result
 
-    # term : factor ((MUL | DIV) factor)
+    # term: factor ((MUL | DIV) factor)
     def term(self):
+        print("get factor")
         result = self.factor()
         while self.current_token.type in (MUL, DIV):
             token = self.current_token
             if token.type == MUL:
-                self.eat(MUL)  # skip * and spaces
-                result = result * self.factor()  # get the number there
+                self.skip_token(MUL)
+                result *= self.factor()
             elif token.type == DIV:
-                self.eat(DIV)  # skip / and spaces
-                result = result / self.factor()  # get the number there
+                self.skip_token(DIV)
+                result /= self.factor()
+        print("term will return value: ", result)
         return result
 
-    # expr : term ((PLUS | MINUS) term)*
+    # expr: term ((PLUS | MINUS) term)*
     def expr(self):
+        print("get term")
         result = self.term()
         while self.current_token.type in (PLUS, MINUS):
             token = self.current_token
             if token.type == PLUS:
-                self.eat(PLUS)  # skip * and spaces
-                result = result + self.term()  # get the number there
+                self.skip_token(PLUS)
+                result += self.term()
             elif token.type == MINUS:
-                self.eat(MINUS)  # skip / and spaces
-                result = result - self.term()  # get the number there
+                self.skip_token(MINUS)
+                result -= self.term()
         return result
 
 
@@ -134,15 +126,15 @@ def main():
     signal.signal(signal.SIGINT, handler)
     while True:
         try:
-            text = input("py_calc $> ")
+            text = input("pycalc $> ")
         except EOFError:
             break
-        if not text:
-            continue
-        lexer = Lexer(text)
-        interpreter = Interpreter(lexer)
-        result = interpreter.expr()
-        print(result)
+        if text:
+            print("receive: ", text)
+            lexer = Lexer(text)
+            interpreter = Interpreter(lexer)
+            result = interpreter.expr()
+            print(result)
 
 
 if __name__ == "__main__":

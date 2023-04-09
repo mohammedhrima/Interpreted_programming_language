@@ -42,3 +42,11 @@ case 3 * 7 / 2:
 my programing language should support data types
 to give value as parameter to function: value
 to give address as parameter to function: refr
+
+factor : integer | expr
+expr : term + term | term - term
+term : factor * factor | factor / factor
+
+Token: store value and type
+Lexer: recognize token type and value
+Interpreter: do operations depends on Lexer, contains expr, term, factor
