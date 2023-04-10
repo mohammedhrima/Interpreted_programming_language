@@ -27,5 +27,7 @@ void handle_signal(int signum);
 void ft_strcpy(char *dest, char *src);
 void ft_strncpy(char *dest, char *src, int size);
 void print_space(int fd, int line_long);
+int ft_isalpha(int c);
+int ft_isdigit(int c);
 
 #endif

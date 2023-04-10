@@ -1,5 +1,20 @@
 #include "header.h"
 
+// character methods
+int ft_isdigit(int c)
+{
+    return (c >= '0' && c <= '9');
+}
+int ft_isalpha(int c)
+{
+    return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'));
+}
+int ft_isalnum(int c)
+{
+    return (ft_isalpha(c) || ft_isdigit(c));
+}
+
+// string methods
 int ft_strlen(char *str)
 {
     int i = 0;
@@ -7,7 +22,73 @@ int ft_strlen(char *str)
         i++;
     return i;
 }
+void ft_strncpy(char *dest, char *src, int size)
+{
+    if (dest == NULL || src == NULL)
+        ft_printf(STDERR_FILENO, "receive NULL in strncpy\n");
+    int len = ft_strlen(dest);
+    int i = 0;
+    while (src[i] && i < size)
+    {
+        dest[len + i] = src[i];
+        i++;
+    }
+}
+void ft_strcpy(char *dest, char *src)
+{
+    if (dest == NULL || src == NULL)
+        ft_printf(STDERR_FILENO, "receive NULL in strcpy\n");
+    int len = ft_strlen(dest);
+    int i = 0;
+    while (src[i])
+    {
+        dest[len + i] = src[i];
+        i++;
+    }
+}
 
+char *ft_strdup(char *str)
+{
+    char *res = calloc(ft_strlen(str), sizeof(char));
+    ft_strcpy(res, str);
+    return (res);
+}
+
+char *strjoin(char *string1, char *string2)
+{
+    char *res = calloc(ft_strlen(string1) + ft_strlen(string2) + 1, sizeof(char));
+    if (res == NULL)
+        ft_printf(STDERR_FILENO, "malloc failed in strjoin");
+    if (string1)
+        ft_strcpy(res, string1);
+    if (string2)
+        ft_strcpy(res + ft_strlen(res), string2);
+    return res;
+}
+
+// readline
+char *readline(int fd)
+{
+    int len = 0;
+    char *res = NULL;
+    char *c = calloc(2, sizeof(char));
+    char *tmp;
+
+    while (1)
+    {
+        int n = read(fd, c, sizeof(char));
+        if (n <= 0)
+            break;
+        tmp = strjoin(res, c);
+        free(res);
+        res = tmp;
+        if (c[0] == '\n' || c[0] == '\0')
+            break;
+    }
+    return res;
+}
+
+// ft_printf
 void ft_putchar(int fd, char c)
 {
     write(fd, &c, sizeof(char));
@@ -103,7 +184,7 @@ void ft_printf(int fd, char *fmt, ...)
                 if (space == 0)
                     space = va_arg(ap, int);
                 char *str = va_arg(ap, char *);
-                if(space > 0)
+                if (space > 0)
                     space -= ft_strlen(str);
                 print_space(fd, space);
                 ft_putstr(fd, str);
@@ -118,72 +199,7 @@ void ft_printf(int fd, char *fmt, ...)
         exit(1);
 }
 
-void ft_strncpy(char *dest, char *src, int size)
-{
-    if (dest == NULL || src == NULL)
-        ft_printf(STDERR_FILENO, "receive NULL in strncpy\n");
-    int len = ft_strlen(dest);
-    int i = 0;
-    while (src[i] && i < size)
-    {
-        dest[len + i] = src[i];
-        i++;
-    }
-}
-
-void ft_strcpy(char *dest, char *src)
-{
-    if (dest == NULL || src == NULL)
-        ft_printf(STDERR_FILENO, "receive NULL in strcpy\n");
-    int len = ft_strlen(dest);
-    int i = 0;
-    while (src[i])
-    {
-        dest[len + i] = src[i];
-        i++;
-    }
-}
-
-char *ft_strdup(char *str)
-{
-    char *res = calloc(ft_strlen(str), sizeof(char));
-    ft_strcpy(res, str);
-    return (res);
-}
-
-char *strjoin(char *string1, char *string2)
-{
-    char *res = calloc(ft_strlen(string1) + ft_strlen(string2) + 1, sizeof(char));
-    if (res == NULL)
-        ft_printf(STDERR_FILENO, "malloc failed in strjoin");
-    if (string1)
-        ft_strcpy(res, string1);
-    if (string2)
-        ft_strcpy(res + ft_strlen(res), string2);
-    return res;
-}
-
-char *readline(int fd)
-{
-    int len = 0;
-    char *res = NULL;
-    char *c = calloc(2, sizeof(char));
-    char *tmp;
-
-    while (1)
-    {
-        int n = read(fd, c, sizeof(char));
-        if (n <= 0)
-            break;
-        tmp = strjoin(res, c);
-        free(res);
-        res = tmp;
-        if (c[0] == '\n' || c[0] == '\0')
-            break;
-    }
-    return res;
-}
-
+// signals
 void handle_signal(int signum)
 {
     exit(0);
