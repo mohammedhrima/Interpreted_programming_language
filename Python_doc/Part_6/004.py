@@ -64,51 +64,23 @@ class Lexer(object):
                 self.position += 1
                 self.skip_space()
                 return Token(DIVISION, '/')
-            return Token(None, EOF)
+            return Token( EOF, None)
 
 
 class Interpreter(object):
     def __init__(self, text):
         self.lexer = Lexer(text)
-        self.current_token = self.lexer.get_token()
-        self.right = None
+        #self.current_token = self.lexer.get_token()
+        #self.right = None
 
     def error(msg):
         raise Exception(msg)
 
-    def term(self):
-        left = self.factor()
-        # if self.current_token.type in (MULTIPLICATION, DIVISION):
-        
-        if self.current_token.type == MULTIPLICATION:
-            right = self.current_token
-            self.current_token = self.lexer.get_token()
-            if right.type == MULTIPLICATION:
-                left.value = left.value * self.factor().value
-            if right.type == INTEGER:
-                return right    
-        return left
-                
-    def expr(self):
-        # after getting term self.current_token.type will be next char
-        left = self.term()
-        if self.current_token in (PLUS, MINUS):
-            pass        
     
-    def factor(self):
-        left = self.current_token
-        # to use after
-        self.current_token = self.lexer.get_token()
-        if self.current_token in (PLUS, MINUS):
-            if self.current_token == PLUS:
-                left = self.current_token
-                right = self.
-            self.current_token = self.lexer.get_token()
-                        
-        left = self.current_token
-        if left.type == INTEGER:
-            self.current_token = self.lexer.get_token()
-            return left
+    
+        
+            
+            
 
 
 if __name__ == "__main__":
