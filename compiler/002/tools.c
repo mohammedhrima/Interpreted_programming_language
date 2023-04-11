@@ -13,6 +13,10 @@ int ft_isalnum(int c)
 {
     return (ft_isalpha(c) || ft_isdigit(c));
 }
+int ft_isspace(int c)
+{
+    return (c == ' ' || c == '\n' || c == '\t');
+}
 
 // string methods
 int ft_strlen(char *str)
@@ -46,7 +50,23 @@ void ft_strcpy(char *dest, char *src)
         i++;
     }
 }
+char *ft_strchr(char *s, int c)
+{
+    int i;
 
+    i = 0;
+    if (!s)
+        return (NULL);
+    while (s[i])
+    {
+        if (s[i] == (char)c)
+            return (s + i);
+        i++;
+    }
+    if (c == 0 && s[i] == 0)
+        return (s + i);
+    return (NULL);
+}
 char *ft_strdup(char *str)
 {
     char *res = calloc(ft_strlen(str), sizeof(char));
@@ -117,6 +137,25 @@ void ft_putnbr(int fd, long num)
     }
 }
 
+void ft_putfloat(int fd, double num, int decimal_places)
+{
+    if (num < 0.0)
+    {
+        ft_putchar(fd, '-');
+        num = -num;
+    }
+    long int_part = (long)num;
+    double float_part = num - (double)int_part;
+    while (decimal_places > 0)
+    {
+        float_part = float_part * 10;
+        decimal_places--;
+    }
+    ft_putnbr(fd, int_part);
+    ft_putchar(fd, '.');
+    ft_putnbr(fd, (long)round(float_part));
+}
+
 void print_space(int fd, int line_long)
 {
     int i = 0;
@@ -173,6 +212,11 @@ void ft_printf(int fd, char *fmt, ...)
                 print_space(fd, space);
                 ft_putnbr(fd, num);
             }
+            if (fmt[i] == 'f')
+            {
+                 double num = va_arg(ap, double);
+                ft_putfloat(fd, num, 6);
+            }
             if (fmt[i] == 'c')
             {
                 space--;
@@ -203,4 +247,62 @@ void ft_printf(int fd, char *fmt, ...)
 void handle_signal(int signum)
 {
     exit(0);
+}
+
+// ats
+long ft_atoi(char *str)
+{
+    long res = 0;
+    long sign = 1;
+    int i = 0;
+
+    while (ft_isspace(str[i]))
+        i++;
+    if (str[i] == '+')
+        i++;
+    else if (str[i] == '-')
+    {
+        i++;
+        sign = -1;
+    }
+    while (ft_isdigit(str[i]))
+    {
+        res = res * 10 + (str[i] - '0');
+        i++;
+    }
+    return sign * res;
+}
+
+double ft_atof(char *str)
+{
+    double res = 0.0;
+    double sign = 1.0;
+    double fraction = 0.1;
+    int i = 0;
+
+    while (ft_isspace(str[i]))
+        i++;
+    if (str[i] == '+')
+        i++;
+    else if (str[i] == '-')
+    {
+        i++;
+        sign = -1.0;
+    }
+    while (ft_isdigit(str[i]))
+    {
+        res = res * 10.0 + (str[i] - '0');
+        i++;
+    }
+    if (str[i] == '.')
+    {
+        i++;
+        while (ft_isdigit(str[i]))
+        {
+            res = res + fraction * (str[i] - '0');
+            fraction *= 0.1;
+            i++;
+        }
+    }
+    return sign * res;
 }
