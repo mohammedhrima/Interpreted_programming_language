@@ -19,6 +19,13 @@
 
 typedef enum
 {
+    left_dir,
+    right_dir
+} direction;
+
+
+typedef enum
+{
     characters_,
     integer_,
     float_,
@@ -31,7 +38,7 @@ typedef struct
     char *name;
     union
     {
-        long integer;
+        //long integer;
         double number;
         char *string;
         bool boolean;
@@ -39,6 +46,10 @@ typedef struct
     data type;
 } var;
 
+int var_index;
+var *variables[500];
+
+// readen lines
 int pos;
 int line;
 char *text;
@@ -53,8 +64,14 @@ void print_space(int fd, int line_long);
 int ft_isalpha(int c);
 int ft_isdigit(int c);
 char *ft_strchr(char *s, int c);
-int ft_strncmp(const char *s1, const char *s2, size_t n);
+char *ft_strrchr(char *s, int c);
+int ft_strncmp(char *s1, char *s2, size_t n);
+int ft_strcmp(char *s1, char *s2);
 double ft_atof(char *str);
 void ft_putfloat(int fd, double num, int decimal_places);
-char *ft_strnstr(const char *haystack, const char *needle, size_t len);
+char *ft_strnstr(char *haystack, char *needle, size_t len);
+char *get_variable_name(direction dir, int len);
+var *get_variable_from_stock(char *name);
+bool less_than_mor_than(var *left, var *right, int operation);
+
 #endif

@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "common.h": "c",
-        "system_error": "c"
+        "system_error": "c",
+        "math.h": "c"
     }
 }

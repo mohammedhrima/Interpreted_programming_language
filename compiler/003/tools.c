@@ -67,6 +67,24 @@ char *ft_strchr(char *s, int c)
         return (s + i);
     return (NULL);
 }
+char *ft_strrchr(char *s, int c)
+{
+    int len;
+
+    len = ft_strlen(s);
+    s += len;
+    if (c == 0)
+        return ((char *)s);
+    while (len >= 0)
+    {
+        if (*s == (char)c)
+            return ((char *)s);
+        s--;
+        len--;
+    }
+    return (NULL);
+}
+
 char *ft_strdup(char *str)
 {
     char *res = calloc(ft_strlen(str), sizeof(char));
@@ -85,7 +103,8 @@ char *strjoin(char *string1, char *string2)
         ft_strcpy(res + ft_strlen(res), string2);
     return res;
 }
-int ft_strncmp(const char *s1, const char *s2, size_t n)
+
+int ft_strncmp(char *s1, char *s2, size_t n)
 {
     size_t i;
 
@@ -97,7 +116,17 @@ int ft_strncmp(const char *s1, const char *s2, size_t n)
     return ((unsigned char)s1[i] - (unsigned char)s2[i]);
 }
 
-char *the_return(const char *needle, char *str, size_t len)
+int ft_strcmp(char *s1, char *s2)
+{
+    size_t i;
+
+    i = 0;
+    while (s2[i] && s1[i] && (unsigned char)s1[i] == (unsigned char)s2[i])
+        i++;
+    return ((unsigned char)s1[i] - (unsigned char)s2[i]);
+}
+
+char *the_return(char *needle, char *str, size_t len)
 {
     size_t i;
     int j;
@@ -122,7 +151,7 @@ char *the_return(const char *needle, char *str, size_t len)
     return (NULL);
 }
 
-char *ft_strnstr(const char *haystack, const char *needle, size_t len)
+char *ft_strnstr(char *haystack, char *needle, size_t len)
 {
     char *str;
 
@@ -163,6 +192,8 @@ void ft_putchar(int fd, char c)
 void ft_putstr(int fd, char *str)
 {
     int i = 0;
+    if (str == NULL)
+        ft_putstr(fd, "(null)");
     while (str && str[i])
         ft_putchar(fd, str[i++]);
 }
@@ -252,11 +283,11 @@ void ft_printf(int fd, char *fmt, ...)
             {
                 if (space == 0)
                     space = va_arg(ap, int);
-                long num = va_arg(ap, long);
+                int num = va_arg(ap, int);
                 if (space > 0)
-                    space -= len_long(num);
+                    space -= len_long((long)num);
                 print_space(fd, space);
-                ft_putnbr(fd, num);
+                ft_putnbr(fd, (long)num);
             }
             if (fmt[i] == 'f')
             {
@@ -286,7 +317,8 @@ void ft_printf(int fd, char *fmt, ...)
     }
     va_end(ap);
     if (fd == STDERR_FILENO)
-        exit(1);
+    {    //exit(1);
+    }
 }
 
 // signals

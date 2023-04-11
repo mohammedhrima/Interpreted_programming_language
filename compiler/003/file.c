@@ -1,11 +1,16 @@
 #include "header.h"
 
+
+
+
 var *new_var(char *name, data type)
 {
-    var *new = calloc(sizeof(var), sizeof(char));
-    new->name = name;
-    new->type = type;
-    return new;
+    static int index;
+
+    variables[index] = calloc(sizeof(var), sizeof(char));
+    variables[index]->name = name;
+    variables[index]->type = type;
+    return variables[index++];
 }
 
 int skip_space()
@@ -28,12 +33,14 @@ var *Interpret(char *str)
     int skiped;
     var *new;
     char *bool_value;
+    int operation;
 
     while (text[pos])
     {
 
         // skip spaces
         skip_space();
+        // get variables
         if (ft_isalpha(text[pos]))
         {
             // get variable name
@@ -42,6 +49,7 @@ var *Interpret(char *str)
                 pos++;
             end = pos;
             skip_space();
+            // ft_printf(STDOUT, "pos: %d -> %c\n", pos, text[pos]);
             if (text[pos] == '=')
             {
                 pos++; // skip =
@@ -106,6 +114,25 @@ var *Interpret(char *str)
                 else
                     ft_printf(STDERR, "Unknown data type\n");
             }
+            else if (ft_strchr("><-+", text[pos]))
+            {
+                operation = text[pos];
+                len = end - start;
+                //ft_printf(STDOUT, "token is %c, left is from index %d to %d, len: %d\n", text[pos], start, end - 1, len);
+                char *left_name = get_variable_name(left_dir, len);
+                pos++;
+                char *right_name = get_variable_name(right_dir, 0);
+                ft_printf(STDOUT, "compare '%s' and '%s'\n", left_name, right_name);
+                var *left_var = get_variable_from_stock(left_name);
+                if(left_var == NULL)
+                    ft_printf(STDERR, "Unknown variable '%s'\n", left_name);
+                var *right_var = get_variable_from_stock(right_name);
+                if(right_var == NULL)
+                    ft_printf(STDERR, "Unknown variable '%s'\n",right_name);
+                new = new_var("tmp",boolean_);
+                new->value.boolean = less_than_mor_than(left_var, right_var,operation);
+                return (new);
+            }
         }
         else
             ft_printf(STDERR, "syntax error\n");
@@ -116,7 +143,6 @@ var *Interpret(char *str)
 
 int main(void)
 {
-
     signal(SIGINT, handle_signal);
     while (1)
     {
@@ -133,12 +159,16 @@ int main(void)
             if (variable)
             {
                 if (variable->type == integer_ || variable->type == float_)
-                    ft_printf(STDOUT, "%3d | '%s' is '%f'\n", line, variable->name, variable->value.number);
-
+                    ft_printf(STDOUT, "%3d | '%s' is number with value '%f'\n", line, variable->name, variable->value.number);
                 if (variable->type == characters_)
-                    ft_printf(STDOUT, "%3d | '%s' is '%s'\n", line, variable->name, variable->value.string);
+                    ft_printf(STDOUT, "%3d | '%s' is characters with value '%s'\n", line, variable->name, variable->value.string);
                 if (variable->type == boolean_)
-                    ft_printf(STDOUT, "%3d | '%s' is '%d'\n", line, variable->name, variable->value.boolean);
+                {
+                    if (variable->value.boolean)
+                        ft_printf(STDOUT, "%3d | '%s' is boolean with value 'true'\n", line, variable->name);
+                    else
+                        ft_printf(STDOUT, "%3d | '%s' is boolean with value 'false'\n", line, variable->name);
+                }
                 line++;
             }
         }
