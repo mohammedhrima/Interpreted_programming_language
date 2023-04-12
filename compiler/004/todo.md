@@ -5,7 +5,6 @@ result:
 - data types:
   * boolean:
     true, false
-
   * string: string | character
     "hello world" | 'hello world'
   * number: integer | float
@@ -44,3 +43,6 @@ result:
 
 - expect new line at the end of each line
 - varibale name can contains number also
+- build ide that support it
+- add thread that check available temporary and permanenet variables
+- Nunabale varibales
