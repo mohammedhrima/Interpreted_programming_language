@@ -81,6 +81,10 @@ var *Interpret(char *str)
                 while (ft_isalpha(text[pos]))
                     pos++;
                 end = pos;
+                while (ft_isdigit(text[pos]))
+                    pos++;
+                end = pos;
+
                 skip_space();
                 // ft_printf(STDOUT, "pos: %d -> %c\n", pos, text[pos]);
                 if (text[pos] == '=')
@@ -122,6 +126,8 @@ var *Interpret(char *str)
                             len = pos - left_quotes_index - 1;
                             new->value.string = calloc(len + 1, sizeof(char));
                             ft_strncpy(new->value.string, text + left_quotes_index + 1, len);
+                            pos++;
+                            // ft_printf(STDOUT, "%v\n", new);
                         }
                         // return new;
                     }
@@ -135,8 +141,6 @@ var *Interpret(char *str)
                         new->value.number = ft_atof(text + pos);
                         while (ft_isdigit(text[pos]))
                             pos++;
-                        // expect new line !!
-                        // return new;
                     }
                     else if (ft_strncmp(text + pos, "true", ft_strlen("true")) == 0 || ft_strncmp(text + pos, "false", ft_strlen("false")) == 0)
                     {
@@ -154,8 +158,39 @@ var *Interpret(char *str)
                         }
                         // return new;
                     }
+                    // asignement from another variable
+                    else if (ft_isalpha(text[pos]))
+                    {
+                        start = pos;
+                        end = start;
+                        while (ft_isalpha(text[end]) || ft_isdigit(text[end]))
+                            end++;
+                        char *right_name = get_variable_name(start, end);
+                        pos = end;
+                        var *right_var = get_variable_from_stock(right_name);
+                        //visualize_variables();
+                        if (right_var)
+                        {
+                            assign_var(new, right_var);
+                            //ft_printf(STDOUT, "exist\n");
+                        }
+                        else
+                            ft_printf(STDOUT, "Unknown variable \'%s\'\n", right_name);
+                        //visualize_variables();
+                    }
                     else
                         ft_printf(STDERR, "Unknown data type\n");
+                    // skip spaces at end of declaration or assignment
+                    while (ft_isspace(text[pos]))
+                        pos++;
+                    // expect new line !!
+                    if (text[pos] != '\0')
+                    {
+                        ft_printf(STDERR, "%0s\n", pos + 1, "^");
+                        ft_printf(STDERR, "expecting 'new line' in index %d\n", pos);
+                        line += 2;
+                        break;
+                    }
                 }
                 else if (text[pos] && ft_strchr("><-+", text[pos])) // == 1 didn't work, check after why
                 {
@@ -164,7 +199,7 @@ var *Interpret(char *str)
                     while (start > 0 && ft_isspace(text[start]))
                         start--;
                     end = start + 1;
-                    while (start > 0 && ft_isalpha(text[start]))
+                    while (start > 0 && (ft_isalpha(text[start]) || ft_isdigit(text[start])))
                         start--;
                     if (ft_isspace(text[start]))
                         start++;
@@ -175,7 +210,7 @@ var *Interpret(char *str)
                     while (ft_isspace(text[start]))
                         start++;
                     end = start;
-                    while (ft_isalpha(text[end]))
+                    while ((ft_isalpha(text[end]) || ft_isdigit(text[end])))
                         end++;
                     // right name
                     char *right_name = get_variable_name(start, end);

@@ -24,7 +24,7 @@ void assign_var(var *dest, var *src)
         dest->curr_index = dest_index;
         dest->name = dest_name;
     }
-    ft_printf(STDOUT, "conflit in data type between '%s' type '%s' and '%s' type '%s'\n", src->name, to_string(src->type), dest->name, to_string(dest->type));
+   // ft_printf(STDOUT, "conflit in data type between '%s' type '%s' and '%s' type '%s'\n", src->name, to_string(src->type), dest->name, to_string(dest->type));
 }
 
 char *get_variable_name(int start, int end)

@@ -254,12 +254,12 @@ void ft_putfloat(int fd, double num, int decimal_places)
     ft_putnbr(fd, (long)round(float_part));
 }
 
-void print_space(int fd, int line_long)
+void print_space(int fd, int line_long, char c)
 {
     int i = 0;
     while (i < line_long)
     {
-        ft_putchar(fd, ' ');
+        ft_putchar(fd, c);
         i++;
     }
 }
@@ -284,8 +284,8 @@ int len_of_num(long num)
 void ft_printf(int fd, char *fmt, ...)
 {
     va_list ap;
+    print_space(STDOUT, 3 - (int)len_of_num((long)line), '0');
     ft_putnbr(fd, line);
-    print_space(STDOUT, 4 - (int)len_of_num((long)line));
     ft_putstr(fd, "| ");
     line++;
 
@@ -344,7 +344,7 @@ void ft_printf(int fd, char *fmt, ...)
                 int num = va_arg(ap, int);
                 if (space > 0)
                     space -= len_of_num((long)num);
-                print_space(fd, space);
+                print_space(fd, space, ' ');
                 ft_putnbr(fd, (long)num);
             }
             if (fmt[i] == 'f')
@@ -365,7 +365,7 @@ void ft_printf(int fd, char *fmt, ...)
                 char *str = va_arg(ap, char *);
                 if (space > 0)
                     space -= ft_strlen(str);
-                print_space(fd, space);
+                print_space(fd, space, ' ');
                 ft_putstr(fd, str);
             }
         }
