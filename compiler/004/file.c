@@ -8,9 +8,12 @@ var *new_var(char *name, data type, bool is_temporary)
 
     if (is_temporary)
     {
-        ft_printf(STDOUT, "var name '%s' in index %d, temporary\n", name, tmp_index);
+        // ft_printf(STDOUT, "var name '%s' in index %d, temporary\n", name, tmp_index);
         temporaries[tmp_index] = calloc(1, sizeof(var));
+        temporaries[tmp_index]->name = name;
+        temporaries[tmp_index]->type = type;
         temporaries[tmp_index]->curr_index = tmp_index;
+        temporaries[tmp_index]->temporary = true;
         tmp_index++;
         return temporaries[tmp_index - 1];
     }
@@ -21,11 +24,12 @@ var *new_var(char *name, data type, bool is_temporary)
     }
     else
     {
-        ft_printf(STDOUT, "var name '%s' in index %d, permanent\n", name, per_index);
+        // ft_printf(STDOUT, "var name '%s' in index %d, permanent\n", name, per_index);
         variables[per_index] = calloc(1, sizeof(var));
         variables[per_index]->name = name;
         variables[per_index]->type = type;
         variables[per_index]->curr_index = per_index;
+        variables[per_index]->temporary = false;
         per_index++;
         return variables[per_index - 1];
     }
@@ -67,48 +71,7 @@ var *Interpret(char *str)
             if (ft_strcmp("vars", text + pos) == 0)
             {
                 pos += 4;
-                int i = 0;
-                ft_printf(STDOUT, "permanent variables: \n");
-                while (variables[i])
-                {
-                    var *variable = variables[i];
-                    if (variable)
-                    {
-                        if (variable->type == integer_ || variable->type == float_)
-                            ft_printf(STDOUT, "     '%s' is number with value '%f'\n", variable->name, variable->value.number);
-                        if (variable->type == characters_)
-                            ft_printf(STDOUT, "     '%s' is characters with value '%s'\n", variable->name, variable->value.string);
-                        if (variable->type == boolean_)
-                        {
-                            if (variable->value.boolean)
-                                ft_printf(STDOUT, "     '%s' is boolean with value 'true'\n", variable->name);
-                            else
-                                ft_printf(STDOUT, "     '%s' is boolean with value 'false'\n", variable->name);
-                        }
-                    }
-                    i++;
-                }
-                i = 0;
-                ft_printf(STDOUT, "temporary variables: \n");
-                while (temporaries[i])
-                {
-                    var *temporary = variables[i];
-                    if (temporary)
-                    {
-                        if (temporary->type == integer_ || temporary->type == float_)
-                            ft_printf(STDOUT, "     '%s' is number with value '%f'\n", temporary->name, temporary->value.number);
-                        if (temporary->type == characters_)
-                            ft_printf(STDOUT, "     '%s' is characters with value '%s'\n", temporary->name, temporary->value.string);
-                        if (temporary->type == boolean_)
-                        {
-                            if (temporary->value.boolean)
-                                ft_printf(STDOUT, "     '%s' is boolean with value 'true'\n", temporary->name);
-                            else
-                                ft_printf(STDOUT, "'%s' is boolean with value 'false'\n", temporary->name);
-                        }
-                    }
-                    i++;
-                }
+                visualize_variables();
             }
             // runing something else in staed of vars
             else
@@ -160,7 +123,7 @@ var *Interpret(char *str)
                             new->value.string = calloc(len + 1, sizeof(char));
                             ft_strncpy(new->value.string, text + left_quotes_index + 1, len);
                         }
-                        return new;
+                        // return new;
                     }
                     // number
                     else if (ft_isdigit(text[pos]))
@@ -172,15 +135,11 @@ var *Interpret(char *str)
                         new->value.number = ft_atof(text + pos);
                         while (ft_isdigit(text[pos]))
                             pos++;
-                        // skip_space();
                         // expect new line !!
-                        // if (text[pos] != text[left_quotes_index])
-                        //     ft_printf(STDERR, "%3d | %0s\n%3d | expecting \'%c\' in index %d\n", line, pos + 1, "^", line + 1, text[left_quotes_index], pos);
-                        return new;
+                        // return new;
                     }
                     else if (ft_strncmp(text + pos, "true", ft_strlen("true")) == 0 || ft_strncmp(text + pos, "false", ft_strlen("false")) == 0)
                     {
-                        // ft_printf(STDOUT, "is boolean\n");
                         // expect new line !!
                         new->type = boolean_;
                         if (ft_strnstr(text + pos, "true", 4))
@@ -193,14 +152,14 @@ var *Interpret(char *str)
                             new->value.boolean = false;
                             pos += 5;
                         }
-                        return new;
+                        // return new;
                     }
                     else
                         ft_printf(STDERR, "Unknown data type\n");
                 }
-                else if (ft_strchr("><-+", text[pos])) // == 1 didn't work, check after why
+                else if (text[pos] && ft_strchr("><-+", text[pos])) // == 1 didn't work, check after why
                 {
-                    ft_printf(STDOUT, "found '%c' in pos: %d\n", text[pos], pos);
+                    // ft_printf(STDOUT, "%d: found '%c' in pos: %d\n", __LINE__, text[pos], pos);
                     start = pos - 1;
                     while (start > 0 && ft_isspace(text[start]))
                         start--;
@@ -220,26 +179,29 @@ var *Interpret(char *str)
                         end++;
                     // right name
                     char *right_name = get_variable_name(start, end);
-                    // ft_printf(STDOUT, "start: %d, end: %d, left: '%s', right: '%s'\n", start, end, left_name, right_name);
 
                     if (text[pos] == '<' || text[pos] == '>')
                     {
                         operation = text[pos];
-                        ft_printf(STDOUT, "do '%s' '%c' '%s'\n", left_name, operation, right_name);
+                        // ft_printf(STDOUT, "do '%s' '%c' '%s'\n", left_name, operation, right_name);
                         var *left_var = get_variable_from_stock(left_name);
                         if (left_var == NULL)
                             ft_printf(STDERR, "Unknown variable '%s'\n", left_name);
+                        // ft_printf(STDOUT, "%v\n", left_var);
                         var *right_var = get_variable_from_stock(right_name);
                         if (right_var == NULL)
                             ft_printf(STDERR, "Unknown variable '%s'\n", right_name);
+                        // ft_printf(STDOUT, "%v\n", right_var);
+                        var *res;
                         if (right_var && left_var)
-                            less_than_mor_than(left_var, right_var, operation);
-                        return new;
+                            res = less_than_more_than(left_var, right_var, operation);
+                        ft_printf(STDOUT, "line %d: %v\n", __LINE__, res);
+                        // return new;
                     }
                     if (text[pos] == '-' || text[pos] == '+')
                     {
                         operation = text[pos];
-                        ft_printf(STDOUT, "do '%s' '%c' '%s'\n", left_name, operation, right_name);
+                        // ft_printf(STDOUT, "do '%s' '%c' '%s'\n", left_name, operation, right_name);
                         var *left_var = get_variable_from_stock(left_name);
                         if (left_var == NULL)
                             ft_printf(STDERR, "Unknown variable '%s'\n", left_name);
@@ -248,10 +210,11 @@ var *Interpret(char *str)
                             ft_printf(STDERR, "Unknown variable '%s'\n", right_name);
                         if (right_var && left_var)
                             new = math_operation(left_var, right_var, operation);
-                        return new;
+                        ft_printf(STDOUT, "line %d: %v\n", __LINE__, new);
+                        // return new;
                     }
 
-                    return (new);
+                    // return (new);
                 }
             }
         }

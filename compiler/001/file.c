@@ -80,7 +80,7 @@ int main(void)
     {
         line++;
         column = 0;
-        ft_printf(STDOUT, "%3d | ", line);
+        ft_printf(STDOUT, "");
         text = readline(STDIN);
         if (text)
         {
@@ -88,11 +88,10 @@ int main(void)
                 continue;
             line++;
             text[ft_strlen(text) - 1] = '\0'; // replace \n with \0
-            // ft_printf(STDOUT, "%3d | received: %s\n", line, text);
             line++;
             var *variable = Interpret(text);
             if(variable)
-                ft_printf(STDOUT, "%3d | %s=%s\n", line, variable->name, variable->value);
+                ft_printf(STDOUT, "%s=%s\n", variable->name, variable->value);
         }
         free(text);
     }

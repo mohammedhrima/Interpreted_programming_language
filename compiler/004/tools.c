@@ -160,6 +160,27 @@ char *ft_strnstr(char *haystack, char *needle, size_t len)
     str = (char *)haystack;
     return (the_return(needle, str, len));
 }
+// mems
+void *ft_memcpy(void *dst, void *src, size_t n)
+{
+    size_t i;
+    char *ptr1;
+    char *ptr2;
+
+    if (!dst)
+        return (src);
+    if (!src)
+        return (dst);
+    ptr1 = (char *)dst;
+    ptr2 = (char *)src;
+    i = 0;
+    while (i < n)
+    {
+        ptr1[i] = ptr2[i];
+        i++;
+    }
+    return (dst);
+}
 
 // readline
 char *readline(int fd)
@@ -282,6 +303,39 @@ void ft_printf(int fd, char *fmt, ...)
             {
                 space = 10 * space + fmt[i] - '0';
                 i++;
+            }
+            if (fmt[i] == 'v')
+            {
+                var *variable = va_arg(ap, var *);
+                if (variable)
+                {
+
+                    ft_putstr(fd, "name: ");
+                    ft_putstr(fd, variable->name);
+                    ft_putstr(fd, ", type: ");
+                    ft_putstr(fd, to_string(variable->type));
+                    ft_putstr(fd, ", index: ");
+                    ft_putnbr(fd, (long)variable->curr_index);
+                    ft_putstr(fd, ", value: '");
+                    if (variable->type == characters_)
+                        ft_putstr(fd, variable->value.string);
+                    if (variable->type == integer_ || variable->type == float_)
+                        ft_putfloat(fd, variable->value.number, 6);
+                    if (variable->type == boolean_)
+                    {
+                        if (variable->value.boolean)
+                            ft_putstr(fd, "true");
+                        else
+                            ft_putstr(fd, "false");
+                    }
+                    ft_putstr(fd, "'");
+                    if (variable->temporary)
+                        ft_putstr(fd, ", temporary");
+                    else
+                        ft_putstr(fd, ", permanent");
+                }
+                else
+                    ft_putstr(fd, "(null obj)");
             }
             if (fmt[i] == 'd')
             {

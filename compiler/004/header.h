@@ -44,7 +44,7 @@ typedef struct
         bool boolean;
     } value;
     int curr_index;
-   // bool temporary;
+   bool temporary;
     data type;
 } var;
 
@@ -78,8 +78,12 @@ void ft_putfloat(int fd, double num, int decimal_places);
 char *ft_strnstr(char *haystack, char *needle, size_t len);
 char *get_variable_name(int start, int end);
 var *get_variable_from_stock(char *name);
-var* less_than_mor_than(var *left, var *right, int operation);
+var* less_than_more_than(var *left, var *right, int operation);
 var *new_var(char *name, data type, bool temporary);
 var *math_operation(var *left, var *right, int operation);
+char *to_string(data type);
+void *ft_memcpy(void *dst, void *src, size_t n);
+void assign_var(var *dest, var *src);
+void visualize_variables(void);
 
 #endif
