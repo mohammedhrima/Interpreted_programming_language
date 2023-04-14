@@ -21,7 +21,7 @@ typedef enum
 {
     left_dir,
     right_dir
-} direction;
+} dir;
 
 typedef enum
 {
@@ -46,6 +46,14 @@ typedef struct
     bool temporary;
     data type;
 } var;
+
+typedef struct Token Token;
+struct Token
+{
+    // char *left; //wil be replace with var*
+    var *variable; // will be replaced with var*
+    Token *right;
+};
 
 // int var_index;
 var *variables[500];
@@ -75,15 +83,22 @@ int ft_strcmp(char *s1, char *s2);
 double ft_atof(char *str);
 void ft_putfloat(int fd, double num, int decimal_places);
 char *ft_strnstr(char *haystack, char *needle, size_t len);
-char *get_variable_name(int start, int end);
+char *get_identifier(int start, int end);
 var *get_variable_from_stock(char *name);
 var *less_than_more_than(var *left, var *right, int operation);
 var *new_var(char *name, data type, bool temporary);
-var *math_operation(var *left, var *right, int operation);
+var *operation_(var *left, var *right, int operation);
+var *operation__(var *left, var *right, char *operation);
 char *to_string(data type);
 void *ft_memcpy(void *dst, void *src, size_t n);
 void assign_var(var *dest, var *src);
 void visualize_variables(void);
 int is_math_operation(int c);
-
+int skip_space(void);
+Token *assign();
+void indexes();
+void ft_putstr(int fd, char *str);
+void ft_putnbr(int fd, long num);
+void skip_alpha_num(void);
+Token *new_token(var *variable);
 #endif

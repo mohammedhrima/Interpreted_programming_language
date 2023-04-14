@@ -1,3 +1,4 @@
+
 #include "header.h"
 
 var *new_var(char *name, data type, bool is_temporary)
@@ -73,7 +74,58 @@ var *Interpret(char *str)
             pos += 4;
             visualize_variables();
          }
-         // runing something else in staed of vars
+         else if (ft_strnstr(text + pos, "func", ft_strlen("func")))
+         {
+            pos += ft_strlen("func");
+            if (text[pos] != ' ')
+            {
+               ft_printf(STDERR, "%0s\n", pos + 1, "^");
+               ft_printf(STDERR, "expecting ' ' in index %d\n", pos);
+               break;
+               // exit or something
+            }
+            // ft_printf(STDOUT, "is functions\n");
+            start = pos + ft_strlen("func");
+            end = start;
+            while (text[end] && text[end] != '(')
+               end++;
+            if (text[end] != '(')
+            {
+               ft_printf(STDERR, "%0s\n", end + 1, "^");
+               ft_printf(STDERR, "expecting '(' in index %d\n", end);
+               break;
+               // exit or something
+            }
+            start = end;
+            while (text[end] && text[end] != ')')
+               end++;
+            if (text[end] != ')')
+            {
+               ft_printf(STDERR, "%0s\n", end + 1, "^");
+               ft_printf(STDERR, "expecting ')' in index %d\n", end);
+               break;
+               // exit or something
+            }
+            if (end > start + 1)
+            {
+               int prams_index = 0;
+               char *params[200];
+               memset(params, 0, 200);
+               params[prams_index++] = get_variable_name(start, end);
+               end++; // skip (
+               start = end;
+               params[prams_index++] = get_variable_name(start, end);
+               ft_printf(STDOUT, "function name '%s' takes arguments \n", name);
+               int i = 0;
+               while (params[i])
+               {
+                  ft_printf(STDOUT, "'%s' \n", params[i]);
+                  i++;
+               }
+               ft_printf(STDOUT, "\n");
+            }
+         }
+         // varibales handling
          else
          {
             // get variable name
@@ -265,7 +317,7 @@ var *Interpret(char *str)
 
                // return (new);
             }
-                  }
+         }
       }
       // else
       //     ft_printf(STDERR, "syntax error\n");

@@ -76,6 +76,7 @@ var *less_than_more_than(var *left, var *right, int operation)
    }
    else
       ft_printf(STDOUT, "verify types\n");
+   ft_printf(STDOUT, "return %v\n", temporary);
    return (temporary);
 }
 
@@ -103,6 +104,18 @@ var *math_operation(var *left, var *right, int operation)
       {
          temporary->type = type;
          temporary->value.number = left->value.number - right->value.number;
+         return temporary;
+      }
+      if (operation == '*')
+      {
+         temporary->type = type;
+         temporary->value.number = left->value.number * right->value.number;
+         return temporary;
+      }
+      if (operation == '/')
+      {
+         temporary->type = type;
+         temporary->value.number = left->value.number / right->value.number;
          return temporary;
       }
    }
@@ -146,9 +159,14 @@ void visualize_variables(void)
    ft_printf(STDOUT, "temporary variables: \n");
    while (temporaries[i])
    {
-      var *temporary = variables[i];
+      var *temporary = temporaries[i];
       if (temporary)
          ft_printf(STDOUT, "     %v\n", temporary);
       i++;
    }
+}
+
+int is_math_operation(int c)
+{
+   return (c == '-' || c == '+' || c == '/' || c == '*');
 }

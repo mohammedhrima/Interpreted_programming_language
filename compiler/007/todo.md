@@ -15,6 +15,7 @@ result:
   * '+' : add
   * '-' : subtract
   * '/' : divide
+  * '*' : multiplication
   '==' , 'is' : check if two values are equal
   '!' , 'not' : check if not
   '!=' , 'is not' : check if two values are not equal
