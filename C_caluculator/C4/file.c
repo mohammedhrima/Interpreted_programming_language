@@ -48,7 +48,7 @@ Token *new_token(char *input)
     while (input && input[i])
     {
         Token *curr = &new[j];
-       // printf("get token %d\n", i);
+        // printf("get token %d\n", i);
         while (isspace(input[i]))
             i++;
         if (!input[i])
@@ -183,7 +183,7 @@ int main(void)
             text[ft_strlen(text) - 1] = '\0'; // replace '\n' with '\0'
             count = 0;                        // refresh count each new line
             Token *tokens = new_token(text);
-            
+
             Node *node = parse(tokens);
             int value = interp(node);
             printf("value: %d\n", value);
