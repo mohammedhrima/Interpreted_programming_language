@@ -35,14 +35,28 @@ void build_tokens()
     while (text[txt_pos])
     {
         skip_spaces();
+        if (text[txt_pos] == '\0')
+            break;
         start = txt_pos;
         int type = 0;
-        for (int i = 0; multi_tokens[i].type; i++)
+        for (int i = 0; multi_tokens1[i].type; i++)
         {
-            if (ft_strncmp(multi_tokens[i].value, text + txt_pos, ft_strlen(multi_tokens[i].value)) == 0 && ft_isspace(text[txt_pos + ft_strlen(multi_tokens[i].value)]))
+            if (ft_strncmp(multi_tokens1[i].value, text + txt_pos, ft_strlen(multi_tokens1[i].value)) == 0 && ft_isspace(text[txt_pos + ft_strlen(multi_tokens1[i].value)]))
             {
-                type = multi_tokens[i].type;
-                txt_pos += ft_strlen(multi_tokens[i].value);
+                type = multi_tokens1[i].type;
+                txt_pos += ft_strlen(multi_tokens1[i].value);
+                break;
+            }
+        }
+        if (type)
+            new_token(start, type);
+        type = 0;
+        for (int i = 0; multi_tokens2[i].type; i++)
+        {
+            if (ft_strncmp(multi_tokens2[i].value, text + txt_pos, ft_strlen(multi_tokens2[i].value)) == 0)
+            {
+                type = multi_tokens2[i].type;
+                txt_pos += ft_strlen(multi_tokens2[i].value);
                 break;
             }
         }
@@ -60,6 +74,10 @@ void build_tokens()
             // get number value
             while (ft_isdigit(text[txt_pos]))
                 txt_pos++;
+            if (text[txt_pos] == '.')
+                txt_pos++;
+            while (ft_isdigit(text[txt_pos]))
+                txt_pos++;
             new_token(start, number_);
         }
         else if (text[txt_pos] == '"')
@@ -72,7 +90,7 @@ void build_tokens()
         }
         else
         {
-            ft_printf(err, "unkown value '%s'\n", text + txt_pos);
+            ft_printf(err, "unknown value s:'%s', c:'%c', d:'%d'\n", text + txt_pos, text[txt_pos], text[txt_pos]);
         }
     }
     new_token(txt_pos, eof_);
@@ -107,7 +125,17 @@ Node *assign()
 Node *prime()
 {
     Node *left = NULL;
-    if (tokens[tk_pos]->type == variable_)
+    if (tokens[tk_pos]->type == lbracket_)
+    {
+        // skip left braket
+
+        // to be verified
+        tk_pos++;
+        left = expr();
+        left->type = array_;
+        // tk_pos++;
+    }
+    else if (tokens[tk_pos]->type == variable_)
     {
         printf("found variable\n");
         left = calloc(1, sizeof(Node));
@@ -148,11 +176,23 @@ void new_var(char *name, Type type, char *value)
     if (type == number_)
     {
         new->type = integer_;
-        int res = 0;
+        double res = 0;
         int i = 0;
-        while (value[i])
+        while (ft_isdigit(value[i]))
         {
             res = 10 * res + (value[i] - '0');
+            i++;
+        }
+        if (value[i] == '.')
+        {
+            new->type = float_;
+            i++;
+        }
+        double pres = 0.1;
+        while (ft_isdigit(value[i]))
+        {
+            res = res + pres * (value[i] - '0');
+            pres /= 10;
             i++;
         }
         ft_printf(out, "assign : '%d'\n", res);
@@ -200,7 +240,7 @@ int main(void)
     int i = 0;
     while (i < tk_pos)
     {
-        ft_printf(out, "index: %d\n", i);
+        // ft_printf(out, "index: %d\n", i);
         if (tokens[i] == NULL)
             ft_printf(err, "found null token in index : %d\n", i);
         char *type_str = type_to_string(tokens[i]->type);

@@ -41,6 +41,7 @@ typedef enum
     rparent_,
     lbracket_,
     rbracket_,
+    array_,
     output_,
     input_,
     Node_,
@@ -52,13 +53,34 @@ typedef struct
     Type type;
 } Token;
 
-Token multi_tokens[] = {
+Token multi_tokens1[] = {
     {"if", if_},
     {"while", while_},
     {"or", or_},
     {"and", and_},
     {"func", function_},
     {"while", while_},
+    // {"==", equal_},
+    // {"<=", less_than_},
+    // {">=", more_than_},
+    // {"=", assign_},
+    // {"(", lparent_},
+    // {")", rparent_},
+    // {"[", lbracket_},
+    // {"]", rbracket_},
+    {"output", output_},
+    {"input", input_},
+    {0, 0},
+};
+
+Token multi_tokens2[] = {
+    // {"if", if_},
+    // {"while", while_},
+    // {"or", or_},
+    // {"and", and_},
+    // {"func", function_},
+    // {"while", while_},
+
     {"==", equal_},
     {"<=", less_than_},
     {">=", more_than_},
@@ -67,8 +89,9 @@ Token multi_tokens[] = {
     {")", rparent_},
     {"[", lbracket_},
     {"]", rbracket_},
-    {"output", output_},
-    {"input", input_},
+
+    // {"output", output_},
+    // {"input", input_},
     {0, 0},
 };
 

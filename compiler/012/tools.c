@@ -15,7 +15,7 @@ int ft_isalnum(int c)
 }
 int ft_isspace(int c)
 {
-    return (c == ' ' || c == '\t');
+    return (c == ' ' || c == '\t' || c == '\n');
 }
 
 // string methods
