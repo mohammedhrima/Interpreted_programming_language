@@ -10,8 +10,7 @@ april 12 - 13:
 
 Backus naur form:
    assignment:
-      identifier = expression | identifier
-      expression = identifier | expression
+      
 
 april 14:
 + read array

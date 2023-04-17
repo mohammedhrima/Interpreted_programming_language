@@ -1,277 +1,287 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <string.h>
 #include <ctype.h>
 
 // tokens
-typedef enum
-{
-	none_tk,
-	eof_tk,
-	identifier_tk,
-	character_tk,
-	number_tk,
-	operation_tk
-} Token_type;
-
-typedef struct Token Token;
-struct Token
-{
-	Token_type type;
-	union
-	{
-		char *char_value;
-		int int_value;
-	} value;
-};
-
 char *text;
 int txt_pos;
 
-Token tokens[100];
+typedef struct
+{
+    char type;
+    char *value;
+} Token;
+/*
+    Tokens type:
+        v: variable
+        n: number
+        s: string
+        + : addition
+        - : minus
+        * : multiplication
+        / : division
+*/
+
+Token tokens_list[100];
 int tk_pos;
-// int pos;
+
+Token *new_token(char type, int start, int end)
+{
+    Token *new = &tokens_list[tk_pos];
+    new->type = type;
+    new->value = calloc(end - start + 1, sizeof(char));
+    memcpy(new->value, text + start * sizeof(char), end - start);
+    printf("new token with value: \"%s\", type: \"%c\"\n", new->value, new->type);
+    tk_pos++;
+    return (new);
+}
 
 void skip_space()
 {
-	while (text && isspace(text[txt_pos]))
-		txt_pos++;
+    while (isspace(text[txt_pos]))
+        txt_pos++;
 }
 
-void tokenize(void)
+void build_tokens()
 {
-	int start = 0;
-	int end = 0;
-	while (text[txt_pos])
-	{
-		while (isspace(text[txt_pos]))
-			txt_pos++;
-		Token *token = &tokens[tk_pos];
-		if (isdigit(text[txt_pos]))
-		{
-			token->type = number_tk;
-			while (isdigit(text[txt_pos]))
-			{
-				token->value.int_value = token->value.int_value * 10 + (text[txt_pos] - '0');
-				txt_pos++;
-			}
-		}
-		else if (isalpha(text[txt_pos]))
-		{
-			token->type = identifier_tk;
-			start = txt_pos;
-			while (isalnum(text[txt_pos]))
-				txt_pos++;
-			token->value.char_value = calloc(txt_pos - start + 1, sizeof(char));
-			memcpy(token->value.char_value, text + start, txt_pos - start);
-		}
-		else if (text[txt_pos] == '"')
-		{
-			token->type = character_tk;
-			txt_pos++;
-			start = txt_pos;
-			while (text[txt_pos] && text[txt_pos] != '"')
-				txt_pos++;
-			token->value.char_value = calloc(txt_pos - start + 1, sizeof(char));
-			memcpy(token->value.char_value, text + start, txt_pos - start);
-			// expect "
-			txt_pos++;
-		}
-		else if (strchr("=+-", text[txt_pos]))
-		{
-			token->type = operation_tk;
-			token->value.int_value = text[txt_pos];
-			txt_pos++;
-		}
-		else
-		{
-			printf("unknown value\n");
-			exit(0);
-		}
-		// increment tk_pos
-		tk_pos++;
-	}
-	tokens[tk_pos].type = eof_tk;
-	// return tokens;
-}
-// variables
-typedef struct
-{
-	// Token token;
-	char *name;
-	int int_val;
-} Var;
-
-Var variables[100];
-int var_pos = 0;
-
-Var *new_var(char *name)
-{
-	Var *new = &variables[var_pos++];
-	new->name = name;
-	new->int_val = 0;
-	return (new);
+    int start = 0;
+    Token *tok;
+    while (text[txt_pos])
+    {
+        skip_space();
+        // variable
+        if (isalpha(text[txt_pos]))
+        {
+            start = txt_pos;
+            while (isalpha(text[txt_pos]) || isdigit(text[txt_pos]))
+                txt_pos++;
+            new_token('v', start, txt_pos);
+        }
+        // number
+        else if (isdigit(text[txt_pos]))
+        {
+            start = txt_pos;
+            while (isdigit(text[txt_pos]))
+                txt_pos++;
+            new_token('n', start, txt_pos);
+        }
+        // string
+        else if (text[txt_pos] == '"')
+        {
+            start = txt_pos++;
+            while (text[txt_pos] && text[txt_pos] != '"')
+                txt_pos++;
+            if (text[txt_pos] != '"')
+            {
+                printf("expected '\"'\n");
+                exit(1);
+            }
+            new_token('s', start, txt_pos - 1);
+        }
+        // get operator
+        else if (text[txt_pos] && strchr("+=*/", text[txt_pos]))
+        {
+            start = txt_pos++;
+            new_token(text[start], start, txt_pos);
+        }
+        else
+        {
+            printf("Unknown token '%c' in tokenize\n", text[txt_pos]);
+            exit(1);
+        }
+    }
+    new_token('\0', txt_pos, txt_pos);
 }
 
-Var *find_var(char *name)
-{
-	int i = 0;
-	while (i < var_pos)
-	{
-		if (strcmp(name, variables[i].name) == 0)
-			return (&variables[i]);
-		i++;
-	}
-	return NULL;
-}
-
-// parse
-typedef enum
-{
-	binary_nd,
-	number_nd,
-	identifier_nd
-} Node_type;
+// typedef enum
+// {
+//     binary_,
+//     number_,
+// } Type;
 
 typedef struct Node Node;
 struct Node
 {
-	Node *left;
-	Node *right;
-	Node_type type;
-	/*	
-	if type number_nd
-		token->int_val : will hold the number
-	if type identifier_nd
-		
-	*/
-	Token *token;
-	// Var *value; // variable to hold
+    Node *left;
+    Node *right;
+    int type;
+    int value;
 };
 
-// Node *new_node(Node_type type)
-// {
-// 	Node *new = calloc(11, sizeof(Node));
-// 	new->left = NULL;
-// 	new->right = NULL;
-// 	new->type = type;
-// 	new->value = calloc(1, sizeof(Var));
-// 	// new->token = token;
-// 	return (new);
-// }
+Node *new_node(int type)
+{
+    Node *new = calloc(1, sizeof(Node));
+    new->type = type;
+    // new->value = number;
+    return new;
+}
 
-// void skip_token(Token_type type)
-// {
-// 	if (tokens[tk_pos].type != type)
-// 	{
-// 		printf("error: expected token '%d', but got '%d' \n", type, tokens[tk_pos].type);
-// 		exit(1);
-// 	}
-// 	tk_pos++;
-// }
+// int tok_pos;
+// Nodes
+Node *add();
+Node *mul();
+Node *primary();
 
-// Node *expr();
-// Node *assign();
-// Node *add();
-// Node *mul();
-// Node *primary();
+Node *expr()
+{
+    Node *left = add();
+    return left;
+}
 
-// Node *expr()
-// {
-// 	return assign();
-// }
+Node *add()
+{
+    printf("enter add\n");
+    printf("add call mull\n");
+    Node *left = mul();
+    while (tokens_list[tk_pos].type == '+')
+    {
+        tk_pos++;
+        Node *node = new_node('+');
+        node->left = left;
+        printf("add call mull again\n");
+        node->right = mul();
+        left = node;
+    }
+    return left;
+}
 
-// // for =
-// Node *assign()
-// {
-// 	Node *left = add();
-// }
+Node *mul()
+{
+    printf("enter mull\n");
+    printf("mull call primary\n");
+    Node *left = primary();
+    while (tokens_list[tk_pos].type == '*')
+    {
+        tk_pos++;
+        Node *node = new_node('*');
+        node->left = left;
+        printf("mull call primary again\n");
+        node->right = primary();
+        left = node;
+    }
+    return (left);
+}
 
-// Node *add()
-// {
-// 	Node *left = mul();
-// }
+Node *primary()
+{
+    printf("enter primary\n");
+    Node *left = NULL;
+    if (tokens_list[tk_pos].type == 'n')
+    {
+        int res = 0;
+        int i = 0;
+        char *value = tokens_list[tk_pos].value;
+        printf("primary found number from '%s'\n", value);
+        while (value && value[i])
+        {
+            res = res * 10 + (value[i] - '0');
+            i++;
+        }
+        printf("res: %d\n", res);
+        left = new_node('n');
+        left->value = res;
+        tk_pos++;
+        // return res;
+    }
+    // if (tokens_list[tk_pos].type == '+')
+    // {
+    //     tk_pos++;
+    //     Node *node = new_node('+');
+    //     node->left = left;
+    //     node->right = mul();
+    //     left = node;
+    // }
+    return left;
+}
 
-// Node *mul()
-// {
-// 	Node *left = primary();
-// }
-
-// Node *primary()
-// {
-// 	Node *node = NULL;
-// 	if (tokens[tk_pos].type == number_tk)
-// 	{
-// 		node = new_node(number_nd);
-
-// 		tk_pos++;
-// 		return node;
-// 	}
-// 	else if (tokens[tk_pos].type == identifier_tk)
-// 	{
-// 		node = new_node(identifer_nd);
-// 		node->value = find_var(node);
-// 		if (node->value == NULL)
-// 			node->value = new_var(node);
-// 		tk_pos++;
-// 		return node;
-// 	}
-// }
-
-// int eval()
-// {
-// 	int i = 0;
-// 	while (i < tk_pos)
-// 	{
-// 		Node *curr = expr();
-// 		// if(curr->type = )
-// 	}
-// }
+int eval(Node *node)
+{
+    if (node->type == 'n')
+    {
+        printf("%d\n", node->value);
+        return node->value;
+    }
+    else if (node->type == '*')
+    {
+        printf("*\n");
+        int left = eval(node->left);
+        int right = eval(node->right);
+        printf("left: %d\n", left);
+        printf("right: %d\n", right);
+        return (left * right);
+    }
+    else if (node->type == '+')
+    {
+        printf("+\n");
+        int left = eval(node->left);
+        int right = eval(node->right);
+        printf("left: %d\n", left);
+        printf("right: %d\n", right);
+        return (left + right);
+    }
+    return -1;
+}
 
 int main(void)
 {
-	FILE *fp = NULL;
-	long file_size = 0;
+    FILE *fp = NULL;
+    long file_size = 0;
 
-	// open file
-	fp = fopen("file.hr", "r");
-	fseek(fp, 0, SEEK_END);
-	file_size = ftell(fp);
+    // open file
+    fp = fopen("file.hr", "r");
+    fseek(fp, 0, SEEK_END);
+    file_size = ftell(fp);
 
-	text = calloc(file_size + 1, sizeof(char));
-	fseek(fp, 0, SEEK_SET);
+    text = calloc(file_size + 1, sizeof(char));
+    fseek(fp, 0, SEEK_SET);
+    fread(text, file_size, 1, fp);
+    fclose(fp);
+    printf("'%s'\n\n", text);
+    build_tokens();
+    printf("\n");
+    int i = 0;
+    while (i < tk_pos)
+    {
+        switch (tokens_list[i].type)
+        {
+        case 'n':
+            printf("number: '%s'\n", tokens_list[i].value);
+            break;
+        case 'v':
+            printf("variable: '%s'\n", tokens_list[i].value);
+            break;
+        case 's':
+            printf("string: '%s'\n", tokens_list[i].value);
+            break;
+        case '+':
+            printf("plus: '%s'\n", tokens_list[i].value);
+            break;
+        case '-':
+            printf("minus: '%s'\n", tokens_list[i].value);
+            break;
+        case '/':
+            printf("divition: '%s'\n", tokens_list[i].value);
+            break;
+        case '*':
+            printf("multiply: '%s'\n", tokens_list[i].value);
+            break;
+        case '=':
+            printf("assign: '%s'\n", tokens_list[i].value);
+            break;
+        case '\0':
+            printf("EOF: '%s'\n", tokens_list[i].value);
+            break;
+        default:
+            printf("unknown token '%c' in printing\n", tokens_list[i].type);
+        }
+        i++;
+    }
+    printf("\n");
+    tk_pos = 0;
 
-	fread(text, file_size, 1, fp);
-
-	fclose(fp);
-
-	tokenize();
-	int i = 0;
-	while (i <= tk_pos)
-	{
-		switch (tokens[i].type)
-		{
-		case identifier_tk:
-			printf("type: identifier, value: '%s'\n", tokens[i].value.char_value);
-			break;
-		case character_tk:
-			printf("type: character, value: '%s'\n", tokens[i].value.char_value);
-			break;
-		case number_tk:
-			printf("type: number, value: '%d'\n", tokens[i].value.int_value);
-			break;
-		case operation_tk:
-			printf("type: operation, value: '%c'\n", tokens[i].value.int_value);
-			break;
-		case eof_tk:
-			printf("type: EOF\n");
-			break;
-		default:
-			printf("error unknown token type: %d\n", tokens[i].type);
-		}
-		i++;
-	}
-	// reset token position
-	// tk_pos = 0;
-	// parse();
+    int final_res = eval(expr());
+    printf("\n\nfinal_res: %d\n ", final_res);
 }
