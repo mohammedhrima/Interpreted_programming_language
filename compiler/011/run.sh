@@ -7,4 +7,4 @@ for dir in ./*.dSYM/; do
 done
 
 # rm -rf exe && gcc -fsanitize=address -fsanitize=null -g3 file.c parsing.c tools.c debug.c -o exe
-rm -rf exe && gcc -fsanitize=address -fsanitize=null -g3 file.c -o exe
+rm -rf exe && gcc -fsanitize=address -fsanitize=null -g3 file.c  -o exe
