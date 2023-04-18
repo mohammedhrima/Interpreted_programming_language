@@ -46,3 +46,5 @@ result:
 - build ide that support it
 - add thread that check available temporary and permanent variables
 - Nunabale variables
+- array of arrays
+- object

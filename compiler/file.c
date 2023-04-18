@@ -23,6 +23,7 @@ typedef union Value Value;
 // tokens
 typedef enum
 {
+    // be carefulll before doing any change here !!!
     eof_,
     variable_,
     characters_,
@@ -49,6 +50,10 @@ typedef enum
     comma_,
     Node_,
     none_,
+    add_,
+    sub_,
+    mul_,
+    div_
 } Type;
 struct Token
 {
@@ -76,6 +81,10 @@ Token operator_tokens[] = {
     {"[", lbracket_},
     {"]", rbracket_},
     {",", comma_},
+    {"+", add_},
+    {"-", sub_},
+    {"*", mul_},
+    {"/", div_},
     {0, 0},
 };
 // they expect '('
@@ -458,6 +467,14 @@ char *type_to_string(int type)
         return "comma";
     case none_:
         return "none";
+    case add_:
+        return "PLUS operator";
+    case sub_:
+        return "MINUS operator";
+    case mul_:
+        return "MULTIPLACTION operator";
+    case div_:
+        return "DIVISION operator";
     default:
         ft_printf(err, "type not found in type_to_string\n", type);
     }
@@ -591,7 +608,7 @@ var *new_array(char *name, Node *node)
     variables[var_index++] = new;
     return new;
 }
-
+// protect it from unkown chracters
 void build_tokens()
 {
     int start = 0;
@@ -713,6 +730,15 @@ Node *assign()
         node->right = prime();
         left = node;
     }
+    else if (tokens[tk_pos]->type == equal_)
+    {
+        Node *node = calloc(1, sizeof(Node));
+        node->type = equal_;
+        node->left = left;
+        tk_pos++;
+        node->right = prime();
+        left = node;
+    }
     return left;
 }
 Node *prime()
@@ -759,8 +785,77 @@ Node *prime()
         left = new_node(comma_, tokens[tk_pos]->content);
         tk_pos++;
     }
+    //////
+    if (tokens[tk_pos]->type == div_ || tokens[tk_pos]->type == mul_)
+    {
+        Node *node = new_node(tokens[tk_pos]->type, tokens[tk_pos]->content);
+        node->left = left;
+        tk_pos++;
+        node->right = prime();
+        left = node;
+    }
+    if (tokens[tk_pos]->type == add_ || tokens[tk_pos]->type == sub_)
+    {
+        Node *node = new_node(tokens[tk_pos]->type, tokens[tk_pos]->content);
+        node->left = left;
+        tk_pos++;
+        node->right = prime();
+        left = node;
+    }
     return left;
 }
+
+var *eval(Node *node)
+{
+    var *res = NULL;
+    ft_printf(out, "node type in eval '%s'\n", type_to_string(node->type));
+    // ft_printf(out, "node right type in eval '%s'\n", type_to_string(node->right->type));
+    if (node->type == number_)
+        return new_var("", number_, node->content);
+    if (node->type == mul_)
+    {
+        var *left = eval(node->left);
+        var *right = eval(node->right);
+        var *res = new_var("", number_, "0");
+        if (left->type == float_ || right->type == float_)
+            res->type = float_;
+        res->value.number = left->value.number * right->value.number;
+        return res;
+    }
+    if (node->type == div_)
+    {
+        var *left = eval(node->left);
+        var *right = eval(node->right);
+        var *res = new_var("", number_, "0");
+        if (left->type == float_ || right->type == float_)
+            res->type = float_;
+        res->value.number = left->value.number / right->value.number;
+        return res;
+    }
+    if (node->type == add_)
+    {
+        var *left = eval(node->left);
+        var *right = eval(node->right);
+        var *res = new_var("", number_, "0");
+        if (left->type == float_ || right->type == float_)
+            res->type = float_;
+        res->value.number = left->value.number / right->value.number;
+        return res;
+    }
+    if (node->type == sub_)
+    {
+        var *left = eval(node->left);
+        var *right = eval(node->right);
+        var *res = new_var("", number_, "0");
+        if (left->type == float_ || right->type == float_)
+            res->type = float_;
+        res->value.number = left->value.number / right->value.number;
+        return res;
+    }
+
+    return res;
+}
+
 void execute()
 {
     Node *curr = expr();
@@ -778,7 +873,17 @@ void execute()
             while (curr)
             {
                 if (curr->type == assign_)
-                    new_var(curr->left->content, curr->right->type, curr->right->content);
+                {
+                    if (curr->right->type >= variable_ && curr->right->type <= float_)
+                        new_var(curr->left->content, curr->right->type, curr->right->content);
+                    if (curr->right->type >= add_ && curr->right->type <= div_)
+                    {
+                        // new_var();
+                        var *res = eval(curr->right);
+                        ft_printf(out, "%v \n", res);
+                        exit(0);
+                    }
+                }
                 curr = expr();
             }
         }
