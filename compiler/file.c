@@ -89,7 +89,7 @@ union Value
     double number;
     char *string;
     bool boolean;
-    Node *node;
+    // Node *node;
 };
 struct var
 {
@@ -103,7 +103,7 @@ struct Node
 {
     Node *left;
     Node *right;
-    Value value;
+    char *content;
     Type type;
 };
 
@@ -282,6 +282,8 @@ void ft_printf(int fd, char *fmt, ...)
                         ft_putstr(fd, variable->value.string);
                         break;
                     case integer_:
+                        ft_putnbr(fd, variable->value.number);
+                        break;
                     case float_:
                         ft_putfloat(fd, variable->value.number, 6);
                         break;
@@ -292,22 +294,29 @@ void ft_printf(int fd, char *fmt, ...)
                             ft_putstr(fd, "false");
                         break;
                     case array_:
-                        ft_putstr(out, "is array ");
-                        Node *curr = variable->value.node;
-                        while (curr->type != none_)
+                        // ft_putstr(out, "is array ");
+                        ft_putstr(out, "[");
+                        int i = 1;
+                        while (variable[i].type != none_)
                         {
-                            if (curr->type == integer_)
-                            {
-                                ft_putnbr(fd, curr->value.number);
-                                ft_putstr(fd, " ");
-                            }
+                            if (variable[i].type == integer_)
+                                ft_putnbr(fd, variable[i].value.number);
+                            else if (variable[i].type == float_)
+                                ft_putfloat(fd, variable[i].value.number, 6);
+                            else if (variable[i].type == characters_)
+                                ft_putstr(fd, variable[i].value.string);
                             else
                             {
-                                ft_putstr(err, "check type in printf\n");
-                                exit(1);
+                                ft_putstr(fd, "verify type '");
+                                ft_putstr(fd, type_to_string(variable[i].type));
+                                ft_putstr(fd, "'\n");
+                                exit(0);
                             }
-                            curr = curr->left;
+                            i++;
+                            if (variable[i].type != none_)
+                                ft_putstr(fd, ", ");
                         }
+                        ft_putstr(out, "]");
                         break;
                     default:
                         ft_putstr(err, "ft_printf didn't know variable type\n");
@@ -377,6 +386,7 @@ void indexes()
 void visualize_variables(void)
 {
     int i = 0;
+    ft_printf(out, "\n");
     ft_printf(out, "permanent variables: \n");
     while (variables[i])
     {
@@ -468,58 +478,118 @@ Node *new_node(Type type, char *content)
 {
     Node *new = calloc(1, sizeof(Node));
     new->type = type;
-    new->value.string = content;
+    new->content = content;
     return (new);
 }
-void new_var(char *name, Type type, Value value)
+var *new_var(char *name, Type type, char *content)
 {
-    ft_printf(out, "new var received name:'%s' value:'%s'\n", name, value.string);
-    var *new = NULL;
-    new = calloc(1, sizeof(var));
+    ft_printf(out, "new var received name:'%s' value:'%s'\n", name, content);
+    var *new = calloc(1, sizeof(var));
     new->name = name;
     new->curr_index = var_index;
     new->type = type;
     if (type == characters_)
-        new->value.string = value.string;
+        new->value.string = content;
     else if (type == number_)
     {
         new->type = integer_;
         double res = 0;
         int i = 0;
-        while (ft_isdigit(value.string[i]))
+        while (ft_isdigit(content[i]))
         {
-            res = 10 * res + (value.string[i] - '0');
+            res = 10 * res + (content[i] - '0');
             i++;
         }
-        if (value.string[i] == '.')
+        if (content[i] == '.')
         {
             new->type = float_;
             i++;
         }
         double pres = 0.1;
-        while (ft_isdigit(value.string[i]))
+        while (ft_isdigit(content[i]))
         {
-            res = res + pres * (value.string[i] - '0');
+            res = res + pres * (content[i] - '0');
             pres /= 10;
             i++;
         }
         new->value.number = res;
     }
-    else if (type == array_)
-    {
-        ft_printf(out, "new var array, with values: ");
-        new->value.node = value.node->left;
-        Node *tmp = new->value.node;
-        while (tmp->type != none_)
-        {
-            ft_putstr(out, tmp->value.string);
-            ft_putstr(out, " ");
-            tmp = tmp->left;
-        }
-    }
     else
         ft_printf(err, "Unknown type in new_var s:'%s', d:'%d'\n", type_to_string(type), type);
     variables[var_index++] = new;
+    return new;
+}
+
+var *new_array(char *name, Node *node)
+{
+    // in array allocate len + 2, [0] will be arrays info, last one will be none_
+    Type type = node->left->type;
+    Node *start = node->left;
+    int len = 0;
+    while (start->type != none_)
+    {
+        if (start->type != type)
+            ft_printf(err, "the array hase type '%s', can not contains '%s'\n", type_to_string(type), type_to_string(start->type));
+        start = start->left;
+        len++;
+    }
+    ft_printf(out, "array len: '%d'\n", len);
+    // exit(0);
+    // creat new with len + 2
+    var *new = calloc(len + 2, sizeof(var));
+    // array info
+    new->name = name;
+    new->curr_index = var_index;
+    // add array elements
+    int i = 0;
+    new[i].name = name;
+    new[i].type = array_;
+    start = node->left;
+    ft_printf(out, "start type : '%s'\n", type_to_string(start->type));
+    /// for arrays len with be stored in head in number
+    new[i].value.number = len;
+    i++;
+    // store numbers
+    while (start->type == number_)
+    {
+        // check if number or string ...
+        // integer or float
+        double res = 0;
+        char *string = start->content;
+        int j = 0;
+        new[i].type = integer_;
+        while (ft_isdigit(string[j]))
+        {
+            res = 10 * res + (string[j] - '0');
+            j++;
+        }
+        if (string[j] == '.')
+        {
+            new[i].type = float_;
+            j++;
+        }
+        double pres = 0.1;
+        while (ft_isdigit(string[j]))
+        {
+            res = res + pres * (string[j] - '0');
+            pres /= 10;
+            j++;
+        }
+        new[i].value.number = res;
+        start = start->left;
+        i++;
+    }
+    // store characters
+    while (start->type == characters_)
+    {
+        new[i].value.string = start->content;
+        new[i].type = characters_;
+        start = start->left;
+        i++;
+    }
+    new[i].type = none_;
+    variables[var_index++] = new;
+    return new;
 }
 
 void build_tokens()
@@ -650,6 +720,7 @@ Node *prime()
     Node *left = NULL;
     if (tokens[tk_pos]->type == lbracket_)
     {
+        int start = tk_pos;
         tk_pos++; // skip lbracket
         left = new_node(array_, type_to_string(array_));
         Node *tmp = left;
@@ -701,34 +772,20 @@ void execute()
     if (curr->type == assign_)
     {
         if (curr->right->type != array_)
-            ft_printf(out, "do '%s', between '%s' and '%s'\n", type_to_string(curr->type), curr->left->value.string, curr->right->value.string);
-        else
         {
-            ft_printf(out, "do '%s', between '%s' and ", type_to_string(curr->type), curr->left->value.string);
-            Node *tmp = curr->right;
-            curr->right->value.node = tmp;
-            switch (tmp->type)
+            ft_printf(out, "do '%s', between '%s' and '%s'\n", type_to_string(curr->type), curr->left->content, curr->right->content);
+            // start assigning
+            while (curr)
             {
-            case array_:
-                tmp = tmp->left;
-                while (tmp->type != none_)
-                {
-                    ft_putstr(out, tmp->value.string);
-                    ft_putstr(out, " ");
-                    tmp = tmp->left;
-                }
-                break;
-            default:
-                ft_printf(err, "Unknown type in execute s:'%s' ,d:'%d'\n", type_to_string(tmp->type), tmp->type);
+                if (curr->type == assign_)
+                    new_var(curr->left->content, curr->right->type, curr->right->content);
+                curr = expr();
             }
         }
-        ft_putstr(out, "\n");
-        // start assigning
-        while (curr)
+        else
         {
-            if (curr->type == assign_)
-                new_var(curr->left->value.string, curr->right->type, curr->right->value);
-            curr = expr();
+            ft_printf(out, "do '%s', between '%s' and \n", type_to_string(curr->type), curr->left->content);
+            new_array(curr->left->content, curr->right);
         }
     }
     else
@@ -750,8 +807,10 @@ int main(void)
     fread(text, file_size, 1, fp);
     fclose(fp);
     // print text
-    printf("%s\n", text);
+    ft_printf(out, "%s\n", text);
+    indexes();
     build_tokens();
     tk_pos = 0;
     execute();
+    visualize_variables();
 }
