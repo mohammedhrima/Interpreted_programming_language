@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include <stdarg.h>
 #include <math.h>
+#include <assert.h>
+
 // for the stupid implicit declaration error
 void ft_printf(int fd, char *fmt, ...);
 char *type_to_string(int type);
@@ -112,6 +114,7 @@ struct Node
 {
     Node *left;
     Node *right;
+   
     char *content;
     Type type;
 };
@@ -500,7 +503,7 @@ Node *new_node(Type type, char *content)
 }
 var *new_var(char *name, Type type, char *content)
 {
-    ft_printf(out, "new var received name:'%s' value:'%s'\n", name, content);
+    ft_printf(out, "new var received name:'%s' value:'%s' type:'%s'\n", name, content, type_to_string(type));
     var *new = calloc(1, sizeof(var));
     new->name = name;
     new->curr_index = var_index;
@@ -512,22 +515,25 @@ var *new_var(char *name, Type type, char *content)
         new->type = integer_;
         double res = 0;
         int i = 0;
-        while (ft_isdigit(content[i]))
+        if (content)
         {
-            res = 10 * res + (content[i] - '0');
-            i++;
-        }
-        if (content[i] == '.')
-        {
-            new->type = float_;
-            i++;
-        }
-        double pres = 0.1;
-        while (ft_isdigit(content[i]))
-        {
-            res = res + pres * (content[i] - '0');
-            pres /= 10;
-            i++;
+            while (ft_isdigit(content[i]))
+            {
+                res = 10 * res + (content[i] - '0');
+                i++;
+            }
+            if (content[i] == '.')
+            {
+                new->type = float_;
+                i++;
+            }
+            double pres = 0.1;
+            while (ft_isdigit(content[i]))
+            {
+                res = res + pres * (content[i] - '0');
+                pres /= 10;
+                i++;
+            }
         }
         new->value.number = res;
     }
@@ -705,6 +711,8 @@ void build_tokens()
 // build nodes
 Node *expr();
 Node *assign();
+Node *add_sub();
+Node *mul_div();
 Node *prime();
 
 void expect(Type c)
@@ -718,22 +726,45 @@ Node *expr()
 {
     return assign();
 }
+
 Node *assign()
 {
-    Node *left = prime();
+    Node *left = add_sub();
     if (tokens[tk_pos]->type == assign_)
     {
         Node *node = calloc(1, sizeof(Node));
         node->type = assign_;
         node->left = left;
         tk_pos++;
-        node->right = prime();
+        node->right = add_sub();
         left = node;
     }
-    else if (tokens[tk_pos]->type == equal_)
+    return left;
+}
+
+Node *add_sub()
+{
+    Node *left = mul_div();
+    while (tokens[tk_pos]->type == add_ || tokens[tk_pos]->type == sub_)
+    {
+        // Node node = new_node();
+        Node *node = calloc(1, sizeof(Node));
+        node->type = tokens[tk_pos]->type;
+        node->left = left;
+        tk_pos++;
+        node->right = mul_div();
+        left = node;
+    }
+    return left;
+}
+
+Node *mul_div()
+{
+    Node *left = prime();
+    while (tokens[tk_pos]->type == mul_ || tokens[tk_pos]->type == div_)
     {
         Node *node = calloc(1, sizeof(Node));
-        node->type = equal_;
+        node->type = tokens[tk_pos]->type;
         node->left = left;
         tk_pos++;
         node->right = prime();
@@ -741,28 +772,16 @@ Node *assign()
     }
     return left;
 }
+
 Node *prime()
 {
     Node *left = NULL;
     if (tokens[tk_pos]->type == lbracket_)
     {
-        int start = tk_pos;
-        tk_pos++; // skip lbracket
-        left = new_node(array_, type_to_string(array_));
-        Node *tmp = left;
-        Node *tmp_comma = NULL;
-        // protect it from segfault
-        tmp->left = prime();
-        tmp = tmp->left;
-        while (tokens[tk_pos]->type != rbracket_)
-        {
-            expect(comma_);
-            tmp->left = prime();
-            tmp = tmp->left;
-        }
-        if (tokens[tk_pos]->type != rbracket_)
-            ft_printf(err, "Expected ']'\n");
-        tmp->left = new_node(none_, type_to_string(none_));
+        // skip first bracket
+        tk_pos++;
+        left = expr();
+        // skip second bracket
         tk_pos++; // skip rbracket
     }
     else if (tokens[tk_pos]->type == variable_)
@@ -785,23 +804,6 @@ Node *prime()
         left = new_node(comma_, tokens[tk_pos]->content);
         tk_pos++;
     }
-    //////
-    if (tokens[tk_pos]->type == div_ || tokens[tk_pos]->type == mul_)
-    {
-        Node *node = new_node(tokens[tk_pos]->type, tokens[tk_pos]->content);
-        node->left = left;
-        tk_pos++;
-        node->right = prime();
-        left = node;
-    }
-    if (tokens[tk_pos]->type == add_ || tokens[tk_pos]->type == sub_)
-    {
-        Node *node = new_node(tokens[tk_pos]->type, tokens[tk_pos]->content);
-        node->left = left;
-        tk_pos++;
-        node->right = prime();
-        left = node;
-    }
     return left;
 }
 
@@ -809,50 +811,40 @@ var *eval(Node *node)
 {
     var *res = NULL;
     ft_printf(out, "node type in eval '%s'\n", type_to_string(node->type));
-    // ft_printf(out, "node right type in eval '%s'\n", type_to_string(node->right->type));
     if (node->type == number_)
         return new_var("", number_, node->content);
-    if (node->type == mul_)
+    else if (node->type == add_)
     {
         var *left = eval(node->left);
         var *right = eval(node->right);
-        var *res = new_var("", number_, "0");
-        if (left->type == float_ || right->type == float_)
-            res->type = float_;
+        res = new_var("", number_, NULL);
+        res->value.number = left->value.number + right->value.number;
+        return res;
+    }
+    else if (node->type == sub_)
+    {
+        var *left = eval(node->left);
+        var *right = eval(node->right);
+        res = new_var("", number_, NULL);
+        res->value.number = left->value.number - right->value.number;
+        return res;
+    }
+    else if (node->type == mul_)
+    {
+        var *left = eval(node->left);
+        var *right = eval(node->right);
+        res = new_var("", number_, NULL);
         res->value.number = left->value.number * right->value.number;
         return res;
     }
-    if (node->type == div_)
+    else if (node->type == div_)
     {
         var *left = eval(node->left);
         var *right = eval(node->right);
-        var *res = new_var("", number_, "0");
-        if (left->type == float_ || right->type == float_)
-            res->type = float_;
+        res = new_var("", number_, NULL);
         res->value.number = left->value.number / right->value.number;
         return res;
     }
-    if (node->type == add_)
-    {
-        var *left = eval(node->left);
-        var *right = eval(node->right);
-        var *res = new_var("", number_, "0");
-        if (left->type == float_ || right->type == float_)
-            res->type = float_;
-        res->value.number = left->value.number / right->value.number;
-        return res;
-    }
-    if (node->type == sub_)
-    {
-        var *left = eval(node->left);
-        var *right = eval(node->right);
-        var *res = new_var("", number_, "0");
-        if (left->type == float_ || right->type == float_)
-            res->type = float_;
-        res->value.number = left->value.number / right->value.number;
-        return res;
-    }
-
     return res;
 }
 
@@ -868,23 +860,20 @@ void execute()
     {
         if (curr->right->type != array_)
         {
-            ft_printf(out, "do '%s', between '%s' and '%s'\n", type_to_string(curr->type), curr->left->content, curr->right->content);
+            ft_printf(out, "do '%s', between '%s' and '%s'\n", type_to_string(curr->type), curr->left->content, type_to_string(curr->right->type));
             // start assigning
-            while (curr)
+
+            if (curr->type == assign_)
             {
-                if (curr->type == assign_)
+                if (curr->right->type >= variable_ && curr->right->type <= float_)
+                    new_var(curr->left->content, curr->right->type, curr->right->content);
+                if (curr->right->type >= add_ && curr->right->type <= div_)
                 {
-                    if (curr->right->type >= variable_ && curr->right->type <= float_)
-                        new_var(curr->left->content, curr->right->type, curr->right->content);
-                    if (curr->right->type >= add_ && curr->right->type <= div_)
-                    {
-                        // new_var();
-                        var *res = eval(curr->right);
-                        ft_printf(out, "%v \n", res);
-                        exit(0);
-                    }
+                    // create new variabale type float_
+                    // calculate result
+                    // set the new variable the new result
+                    var *res = eval(curr->right);
                 }
-                curr = expr();
             }
         }
         else
