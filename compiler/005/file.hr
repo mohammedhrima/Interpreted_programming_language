@@ -1,4 +1,2 @@
-a = "hello"
-b = " "
-c = "world"
-d = a + b +c
+x = 12
+if x > 11: x = 5

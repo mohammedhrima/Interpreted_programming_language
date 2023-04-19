@@ -32,13 +32,17 @@ typedef enum
     float_,
     assign_,
     equal_,
+    not_equal_,
     less_than_,
     more_than_,
+    less_than_or_equal_,
+    more_than_or_equal_,
     function_,
     if_,
     while_,
     and_,
     or_,
+    end_statement,
     lparent_,
     rparent_,
     lbracket_,
@@ -98,7 +102,7 @@ struct
     {"or", or_},
     {"and", and_},
     {"func", function_},
-    {"while", while_},
+    {":", end_statement},
     {0, 0},
 };
 // they expect nothing
@@ -108,8 +112,11 @@ struct
     Type type;
 } operator_tokens[] = {
     {"==", equal_},
-    {"<=", less_than_},
-    {">=", more_than_},
+    {"!=", not_equal_},
+    {"<", less_than_},
+    {">", more_than_},
+    {"<=", less_than_or_equal_},
+    {">=", more_than_or_equal_},
     {"=", assign_},
     {"(", lparent_},
     {")", rparent_},
@@ -170,7 +177,7 @@ int ft_isalnum(int c)
 }
 int ft_isspace(int c)
 {
-    return (c == ' ' || c == '\t' || c == '\n');
+    return (c == ' ' || c == '\n');
 }
 
 // string methods
@@ -465,10 +472,16 @@ char *type_to_string(int type)
         return "ASSIGNEMENT";
     case equal_:
         return "EQUAL";
+    case not_equal_:
+        return "NOT EQUAL";
     case less_than_:
         return "LESS THAN";
     case more_than_:
         return "MORE THAN";
+    case less_than_or_equal_:
+        return "LESS THAN OR EQUAL";
+    case more_than_or_equal_:
+        return "MORE THAN OR EQUAL";
     case function_:
         return "FUNCTION";
     case if_:
@@ -503,12 +516,12 @@ char *type_to_string(int type)
         return "MULTIPLACTION";
     case div_:
         return "DIVISION";
+    case boolean_:
+        return "BOOLEAN";
+    case end_statement:
+        return "END STATEMENT";
     default:
-        ft_putstr(err, "\n");
-        print_space(err, 3 - (int)len_of_num((long)line), '0');
-        ft_putnbr(err, line);
-        ft_putstr(err, "| ");
-        ft_putstr(err, "type not found in type_to_string '");
+        ft_putstr(err, "error not found in type_to_string '");
         ft_putnbr(err, type);
         ft_putstr(err, "'\n");
         exit(0);
@@ -565,6 +578,16 @@ Token *new_token(Type type)
     case mul_:
     case sub_:
     case div_:
+    case equal_:
+    case not_equal_:
+    case more_than_:
+    case less_than_:
+    case more_than_or_equal_:
+    case less_than_or_equal_:
+    case lparent_:
+    case rparent_:
+    case if_:
+    case end_statement:
         break;
     default:
         ft_printf(err, "verify given token '%t'\n", type);
@@ -686,16 +709,60 @@ Node *assign();
 Node *add_sub();
 Node *mul_div();
 Node *prime();
+Node *equality();
+Node *comparison();
 
 Node *expr()
 {
+    if (tokens[tk_pos]->type == if_)
+    {
+        Node *node = new_node(tokens[tk_pos]);
+        tk_pos++;
+        // condition
+        node->left = expr();
+        // expect :
+        tk_pos++;
+        // bloc
+        node->right = expr();
+        return node;
+    }
     return assign();
 }
 
 Node *assign()
 {
-    Node *left = add_sub();
+    Node *left = equality();
     if (tokens[tk_pos]->type == assign_)
+    {
+        Node *node = new_node(tokens[tk_pos]);
+        node->left = left;
+        tk_pos++;
+        node->right = equality();
+        left = node;
+    }
+    return left;
+}
+
+Node *equality()
+{
+    Node *left = comparison();
+    if (tokens[tk_pos]->type == equal_ || tokens[tk_pos]->type == not_equal_)
+    {
+        Node *node = new_node(tokens[tk_pos]);
+        node->left = left;
+        tk_pos++;
+        node->right = comparison();
+        left = node;
+    }
+    return left;
+}
+
+Node *comparison()
+{
+    Node *left = add_sub();
+    if (
+        tokens[tk_pos]->type == less_than_ || tokens[tk_pos]->type == more_than_ ||
+        tokens[tk_pos]->type == less_than_or_equal_ || tokens[tk_pos]->type == more_than_or_equal_)
     {
         Node *node = new_node(tokens[tk_pos]);
         node->left = left;
@@ -745,21 +812,22 @@ Node *prime()
         tokens[tk_pos]->type == comma_)
     {
         left = new_node(tokens[tk_pos]);
-        if (left->token->type == integer_ || left->token->type == float_)
-            ft_printf(out, "tokens value is : '%f' \n", left->token->value.number);
+        // if (left->token->type == integer_ || left->token->type == float_)
+        //     ft_printf(out, "tokens value is : '%f' \n", left->token->value.number);
         tk_pos++;
+    }
+    else if (
+        tokens[tk_pos]->type == lparent_)
+    {
+        tk_pos++; // skip 1st parent
+        left = expr();
+        // expect rparent_
+        tk_pos++; // skip est parent
     }
     return left;
 }
 
 // execute and create variables
-Val *new_permanent_var(Val *left, Val *value)
-{
-    value->name = left->name;
-    ft_printf(out, "new permanent will return %v\n", value);
-    PERMANENTS[per_index++] = value;
-    return (value);
-}
 
 // Val *new_temporary_var(Type var_type) // to see after if it's necessary
 // {
@@ -783,15 +851,60 @@ Val *get_var(char *name)
         if (ft_strcmp(TEMPORARIES[i]->name, name) == 0)
             return (TEMPORARIES[i]);
     }
-    ft_printf(err, "variable '%s' not found\n", name);
+    ft_printf(out, "variable '%s' not found\n", name);
     return NULL;
+}
+
+Val *new_permanent_var(Val *left, Val *value)
+{
+    value->name = left->name;
+    ft_printf(out, "new permanent will return %v\n", value);
+    PERMANENTS[per_index++] = value;
+    return (value);
 }
 
 Val *eval(Node *node)
 {
     Val *res = NULL;
-    if (node->token->type == variable_)
+    ft_printf(out, "eval received '%t'\n", node->token->type);
+    if (node->token->type == assign_)
+    {
+        Val *exist = get_var(node->left->token->value.name);
+        if (exist)
+        {
+            char *name = exist->name;
+            *exist = *eval(node->right);
+            exist->name = name;
+            return exist;
+        }
+        else
+            return (new_permanent_var(&node->left->token->value, eval(node->right)));
+    }
+    else if (node->token->type == variable_)
+    {
         return (get_var(node->token->value.name));
+    }
+    else if (node->token->type == if_)
+    {
+        Val *left = eval(node->left);
+        if (left->type == boolean_)
+        {
+            if (left->boolean) // is true
+            {
+                return (eval(node->right));
+            }
+            else
+            {
+                return (NULL); // to be handled after
+                // is false
+            }
+        }
+        else
+        {
+            // error should be boolean
+            ft_printf(err, "if should be boolean\n");
+        }
+    }
     else if (node->token->type == integer_ || node->token->type == float_ || node->token->type == characters_)
     {
         ft_printf(out, "return '%v'\n", node->token->value);
@@ -845,8 +958,48 @@ Val *eval(Node *node)
         else
             ft_printf(err, "Error 2: in eval in '%t'\n", node->token->type);
     }
+    else if (
+        node->token->type == equal_ || node->token->type == not_equal_ ||
+        node->token->type == less_than_ || node->token->type == more_than_ ||
+        node->token->type == less_than_or_equal_ || node->token->type == more_than_or_equal_)
+    {
+        Val *left = eval(node->left);
+        Val *right = eval(node->right);
+        if (left->type != right->type && (left->type != integer_ && right->type != integer_))
+            ft_printf(err, "can't '%t' different data type '%t' and '%t' \n", node->token->type, left->type, right->type);
+        if (left->type == integer_ || left->type == float_)
+        {
+            node->token->value.type = boolean_;
+            switch (node->token->type)
+            {
+            case equal_:
+                node->token->value.boolean = left->number == right->number;
+                break;
+            case not_equal_:
+                node->token->value.boolean = left->number != right->number;
+                break;
+            case more_than_:
+                node->token->value.boolean = left->number > right->number;
+                break;
+            case less_than_:
+                node->token->value.boolean = left->number < right->number;
+                break;
+            case more_than_or_equal_:
+                node->token->value.boolean = left->number >= right->number;
+                break;
+            case less_than_or_equal_:
+                node->token->value.boolean = left->number <= right->number;
+                break;
+            default:
+                break;
+            }
+            return &node->token->value;
+        }
+        else
+            ft_printf(err, "Error 3: in eval in '%t'\n", node->token->type);
+    }
     else
-        ft_printf(err, "Error 3: in eval in '%t'\n", node->token->type);
+        ft_printf(err, "Error 0: in eval in '%t'\n", node->token->type);
     return (NULL);
 }
 
@@ -857,22 +1010,36 @@ void execute()
         left should be always variable
         right should be a data type
     */
-    Node *curr = expr();
-    while (curr)
+    Node *curr = NULL;
+    curr = expr();
+    ;
+    while (curr && eval(curr))
     {
-        if (curr->token->type == assign_)
-        {
-            // check types before assiging
-            ft_printf(out, "do '%t', between '%t' and '%t'\n", curr->token->type, curr->left->token->type, curr->right->token->type);
-
-            new_permanent_var(&curr->left->token->value, eval(curr->right));
-        }
-        else
-        {
-            ft_printf(err, "error chi l3eyba\n");
-        }
+        // eval(curr);
         curr = expr();
+        // eval(curr);
     }
+    // while ((curr = expr()))
+    // {
+    //     // curr = expr();
+    //     if (curr->token->type == assign_ )
+    //     {
+    //         // check types before assiging
+    //         ft_printf(out, "do '%t', between '%t' and '%t'\n", curr->token->type, curr->left->token->type, curr->right->token->type);
+    //         new_permanent_var(&curr->left->token->value, eval(curr->right));
+    //     }
+    //     else if(curr->token->type == if_)
+    //     {
+    //         ft_printf(out, "found if\n");
+    //         eval(curr);
+    //         // exit(0);
+    //     }
+    //     // else
+    //     // {
+    //     //     eval(curr);
+    //     //   //  ft_printf(err, "Unknown token type in execute '%t'\n", curr->token->type);
+    //     // }
+    // }
 }
 
 int main(void)

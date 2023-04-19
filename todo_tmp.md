@@ -8,6 +8,7 @@ april 18 target:
     - if statement, while loops, foor loops
 
 /*
+x = (5 == 5)
 x = [1, 2 + 3,3,5 ,8]
 x[0] = 7
 print(x)
