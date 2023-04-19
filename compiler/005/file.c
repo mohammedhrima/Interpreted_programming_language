@@ -8,7 +8,6 @@
 #include <assert.h>
 
 // typedefs
-// typedef struct Val Val;
 typedef struct Node Node;
 typedef struct Token Token;
 typedef struct Val Val;
@@ -16,14 +15,12 @@ typedef struct Val Val;
 // for the stupid implicit declaration error
 void ft_printf(int fd, char *fmt, ...);
 char *type_to_string(int type);
-// Val *eval(Node *node);
 
 #define in STDIN_FILENO
 #define out STDOUT_FILENO
 #define err STDERR_FILENO
 
 // tokens
-
 typedef enum
 {
     none_, // skip 0
@@ -228,6 +225,7 @@ int ft_strcmp(char *s1, char *s2)
         i++;
     return ((unsigned char)s1[i] - (unsigned char)s2[i]);
 }
+
 // ft_printf
 void ft_putchar(int fd, char c)
 {
@@ -517,6 +515,7 @@ char *type_to_string(int type)
     }
     return NULL;
 }
+
 // news functions;
 Token *new_token(Type type)
 {
@@ -762,18 +761,17 @@ Val *new_permanent_var(Val *left, Val *value)
     return (value);
 }
 
-Val *new_temporary_var(Type var_type) // to see after if it's necessary
-{
-    Val *new = calloc(1, sizeof(Val));
-    new->type = var_type;
-    ft_printf(out, "new temporary var with type '%t'\n", var_type);
-    TEMPORARIES[tmp_index++] = new;
-    return (new);
-}
+// Val *new_temporary_var(Type var_type) // to see after if it's necessary
+// {
+//     Val *new = calloc(1, sizeof(Val));
+//     new->type = var_type;
+//     ft_printf(out, "new temporary var with type '%t'\n", var_type);
+//     TEMPORARIES[tmp_index++] = new;
+//     return (new);
+// }
 
 Val *get_var(char *name)
 {
-
     for (int i = 0; i < per_index; i++)
     {
         if (ft_strcmp(PERMANENTS[i]->name, name) == 0)
@@ -808,8 +806,6 @@ Val *eval(Node *node)
         if (left->type == integer_ || left->type == float_)
         {
             left->type = (left->type == float_ || right->type == float_) ? float_ : integer_;
-            // res = new_var("", type, true);
-            // left->type = type;
             double number = 0.0;
             if (node->token->type == add_)
                 number = left->number + right->number;
@@ -820,7 +816,6 @@ Val *eval(Node *node)
         }
         else if (left->type == characters_ && node->token->type == add_)
         {
-            // res = new_var("", left->type, true);
             char *characters = calloc(ft_strlen(left->characters) + ft_strlen(right->characters) + 1, sizeof(char));
             ft_strcpy(characters, left->characters);
             ft_strcpy(characters + ft_strlen(characters), right->characters);
@@ -839,7 +834,6 @@ Val *eval(Node *node)
         if (left->type == integer_ || left->type == float_)
         {
             left->type = (left->type == float_ || right->type == float_) ? float_ : integer_;
-            // res = new_var("", type, true);
             double number = 0.0;
             if (node->token->type == mul_)
                 number = left->number * right->number;
@@ -858,8 +852,6 @@ Val *eval(Node *node)
 
 void execute()
 {
-    // Val *res = eval(curr);
-    // ft_printf(out, "res : %v\n", res);
     /*
     important, in assign:
         left should be always variable
@@ -872,7 +864,7 @@ void execute()
         {
             // check types before assiging
             ft_printf(out, "do '%t', between '%t' and '%t'\n", curr->token->type, curr->left->token->type, curr->right->token->type);
-            
+
             new_permanent_var(&curr->left->token->value, eval(curr->right));
         }
         else
@@ -881,7 +873,6 @@ void execute()
         }
         curr = expr();
     }
-    // Val *res = eval(curr);
 }
 
 int main(void)
