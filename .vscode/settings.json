@@ -1,9 +1,0 @@
-{
-    "files.associations": {
-        "common.h": "c",
-        "system_error": "c",
-        "math.h": "c",
-        "stdarg.h": "c",
-        "stdbool.h": "c"
-    }
-}
