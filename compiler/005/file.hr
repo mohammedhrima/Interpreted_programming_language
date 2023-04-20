@@ -1,2 +1,1 @@
-x = 12
-if x > 11: x = 5
+x= ["abs" "efg" "jjj" "jj"]

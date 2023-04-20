@@ -375,6 +375,32 @@ void ft_printf(int fd, char *fmt, ...)
                         else
                             ft_putstr(fd, "false");
                         break;
+                    case array_:
+                        for (int i = 0; i < var->array_size; i++)
+                        {
+                            switch (var->elems[0].type)
+                            {
+                            case characters_:
+                                ft_putstr(fd, var->elems[i].characters);
+                                break;
+                            case integer_:
+                                ft_putnbr(fd, var->elems[i].number);
+                                break;
+                            case float_:
+                                ft_putfloat(fd, var->elems[i].number);
+                                break;
+                            case boolean_:
+                                if (var->boolean)
+                                    ft_putstr(fd, "true");
+                                else
+                                    ft_putstr(fd, "false");
+                                break;
+                            default:
+                                break;
+                            }
+                            ft_putchar(fd, ' ');
+                        }
+                        break;
                     default:
                         ft_putstr(err, "ft_printf didn't know this variable type '");
                         ft_putstr(err, type_to_string(var->type));
@@ -586,6 +612,8 @@ Token *new_token(Type type)
     case less_than_or_equal_:
     case lparent_:
     case rparent_:
+    case rbracket_:
+    case lbracket_:
     case if_:
     case end_statement:
         break;
@@ -704,6 +732,20 @@ Node *new_node(Token *token)
     return (new);
 }
 
+Val *new_array_node(int start, int end)
+{
+    Val *new = calloc(end - start + 2, sizeof(Val));
+
+    int i = 0;
+    while (start + i < end)
+    {
+        new[i] = tokens[start + i]->value;
+        ft_printf(out, "new[%d]: %v\n", i, &new[i]);
+        i++;
+    }
+    return (new);
+}
+
 Node *expr();
 Node *assign();
 Node *add_sub();
@@ -812,17 +854,27 @@ Node *prime()
         tokens[tk_pos]->type == comma_)
     {
         left = new_node(tokens[tk_pos]);
-        // if (left->token->type == integer_ || left->token->type == float_)
-        //     ft_printf(out, "tokens value is : '%f' \n", left->token->value.number);
         tk_pos++;
     }
     else if (
-        tokens[tk_pos]->type == lparent_)
+        tokens[tk_pos]->type == lbracket_)
     {
-        tk_pos++; // skip 1st parent
-        left = expr();
-        // expect rparent_
-        tk_pos++; // skip est parent
+        tk_pos++;           // skip 1st bracket
+        int start = tk_pos; // replace token that has LEFT bracket by the HEAD of array
+        while (tokens[tk_pos]->type != rbracket_)
+            expr();
+        // expect RIGHT BRACKET !!!
+        ft_printf(out, "start :%d , end :%d\n", start, tk_pos);
+        left = new_node(tokens[start]);
+        left->token->type = array_;
+        left->token->value.elems = new_array_node(start, tk_pos); // replace token that has RIGHT bracket by the END (NONE) of array
+        left->token->value.type = array_;
+        left->token->value.array_size = tk_pos - start;
+        tk_pos++; // skip 2nd bracket
+        // expect rbracket
+        ft_printf(out, "left token type %t\n", left->token->type);
+
+        // exit(0);
     }
     return left;
 }
@@ -851,24 +903,25 @@ Val *get_var(char *name)
         if (ft_strcmp(TEMPORARIES[i]->name, name) == 0)
             return (TEMPORARIES[i]);
     }
-    ft_printf(out, "variable '%s' not found\n", name);
+    // ft_printf(out, "variable '%s' not found\n", name);
     return NULL;
 }
 
 Val *new_permanent_var(Val *left, Val *value)
 {
     value->name = left->name;
-    ft_printf(out, "new permanent will return %v\n", value);
+    ft_printf(out, "new permanent var will return %t\n", value[0].type);
+    ft_printf(out, "new permanent var will return %v\n", value);
     PERMANENTS[per_index++] = value;
     return (value);
 }
 
 Val *eval(Node *node)
 {
-    Val *res = NULL;
     ft_printf(out, "eval received '%t'\n", node->token->type);
     if (node->token->type == assign_)
     {
+        ft_printf(out, "do assignement between type '%t' and '%t' \n", node->left->token->type, node->right->token->type);
         Val *exist = get_var(node->left->token->value.name);
         if (exist)
         {
@@ -878,7 +931,32 @@ Val *eval(Node *node)
             return exist;
         }
         else
-            return (new_permanent_var(&node->left->token->value, eval(node->right)));
+        {
+            ft_printf(out, "create new variable\n");
+            Val *left = &node->left->token->value;
+            ft_printf(out, "after getting left_val : %v\n", left);
+            /////error is here must be fixed
+            Val *right = eval(node->right);
+            ft_printf(out, "after getting right_val : %v\n", right);
+            ////////////////////////////////
+            return (new_permanent_var(left, right));
+        }
+    }
+    else if (node->token->type == integer_ ||
+             node->token->type == float_ ||
+             node->token->type == characters_ ||
+             node->token->type == array_)
+    {
+        if (node->token->type != array_)
+            ft_printf(out, "return '%v'\n", node->token->value);
+        else
+        {
+            ft_printf(out, "return array , array[0] is '%v' \n", &node->token->value.elems[0]);
+            ft_printf(out, "               array[1] is '%v' \n", &node->token->value.elems[1]);
+            ft_printf(out, "               array[2] is '%v' \n", &node->token->value.elems[2]);
+            ft_printf(out, "               array[3] is '%v' \n", &node->token->value.elems[3]);
+        }
+        return &node->token->value;
     }
     else if (node->token->type == variable_)
     {
@@ -904,11 +982,6 @@ Val *eval(Node *node)
             // error should be boolean
             ft_printf(err, "if should be boolean\n");
         }
-    }
-    else if (node->token->type == integer_ || node->token->type == float_ || node->token->type == characters_)
-    {
-        ft_printf(out, "return '%v'\n", node->token->value);
-        return &node->token->value;
     }
     else if (node->token->type == add_ || node->token->type == sub_)
     {
@@ -998,8 +1071,8 @@ Val *eval(Node *node)
         else
             ft_printf(err, "Error 3: in eval in '%t'\n", node->token->type);
     }
-    else
-        ft_printf(err, "Error 0: in eval in '%t'\n", node->token->type);
+
+    ft_printf(err, "Error 0: in eval in '%t'\n", node->token->type);
     return (NULL);
 }
 
@@ -1012,34 +1085,8 @@ void execute()
     */
     Node *curr = NULL;
     curr = expr();
-    ;
     while (curr && eval(curr))
-    {
-        // eval(curr);
         curr = expr();
-        // eval(curr);
-    }
-    // while ((curr = expr()))
-    // {
-    //     // curr = expr();
-    //     if (curr->token->type == assign_ )
-    //     {
-    //         // check types before assiging
-    //         ft_printf(out, "do '%t', between '%t' and '%t'\n", curr->token->type, curr->left->token->type, curr->right->token->type);
-    //         new_permanent_var(&curr->left->token->value, eval(curr->right));
-    //     }
-    //     else if(curr->token->type == if_)
-    //     {
-    //         ft_printf(out, "found if\n");
-    //         eval(curr);
-    //         // exit(0);
-    //     }
-    //     // else
-    //     // {
-    //     //     eval(curr);
-    //     //   //  ft_printf(err, "Unknown token type in execute '%t'\n", curr->token->type);
-    //     // }
-    // }
 }
 
 int main(void)
@@ -1047,7 +1094,7 @@ int main(void)
     /*
         x = [1, 2 + 3,3,5 ,8]
         x[0] = 7
-        print(x)
+        output(x)
         x = 554
         y = x + 2
     */
