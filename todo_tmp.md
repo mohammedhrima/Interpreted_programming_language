@@ -5,7 +5,12 @@
 
 april 18 target:
     - add all operators for all data types
-    - if statement, while loops, foor loops
+    - if statement
+
+april 21 target:
+    build output functions, should print message
+    use the uouput function to debug if statement to improve it
+
 
 /*
 x = (5 == 5)

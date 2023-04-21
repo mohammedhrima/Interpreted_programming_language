@@ -6,6 +6,7 @@
 #include <stdarg.h>
 #include <math.h>
 #include <assert.h>
+#include <string.h>
 
 // typedefs
 typedef struct Node Node;
@@ -44,6 +45,7 @@ typedef enum
     and_,
     or_,
     end_statement,
+    tab_,
     lparent_,
     rparent_,
     lbracket_,
@@ -103,7 +105,6 @@ struct
     {"or", or_},
     {"and", and_},
     {"func", function_},
-    {":", end_statement},
     {0, 0},
 };
 // they expect nothing
@@ -128,6 +129,8 @@ struct
     {"-", sub_},
     {"*", mul_},
     {"/", div_},
+    {":", end_statement},
+    {"\t", tab_},
     {0, 0},
 };
 // they expect '('
@@ -468,14 +471,14 @@ void visualize_variables(void)
         i++;
     }
     i = 0;
-    ft_printf(out, "temporary variables: \n");
-    while (TEMPORARIES[i])
-    {
-        Val *temporary = TEMPORARIES[i];
-        if (temporary)
-            ft_printf(out, "     %v\n", temporary);
-        i++;
-    }
+    /* ft_printf(out, "temporary variables: \n");
+     while (TEMPORARIES[i])
+     {
+         Val *temporary = TEMPORARIES[i];
+         if (temporary)
+             ft_printf(out, "     %v\n", temporary);
+         i++;
+     }*/
 }
 // parsing functions
 char *type_to_string(int type)
@@ -515,7 +518,7 @@ char *type_to_string(int type)
     case or_:
         return "OR";
     case and_:
-        return "ANC";
+        return "AND";
     case while_:
         return "WHILE LOOP";
     case output_:
@@ -546,6 +549,8 @@ char *type_to_string(int type)
         return "BOOLEAN";
     case end_statement:
         return "END STATEMENT";
+    case tab_:
+        return "TAB";
     default:
         ft_putstr(err, "error not found in type_to_string '");
         ft_putnbr(err, type);
@@ -570,7 +575,6 @@ Token *new_token(Type type)
         ft_printf(out, "new token type: '%t' with name '%s'\n", type, new->value.name);
         break;
     case characters_:
-
         new->value.type = type;
         new->value.characters = calloc(txt_pos - start + 1, sizeof(char));
         ft_strncpy(new->value.characters, text + start, txt_pos - start);
@@ -578,7 +582,6 @@ Token *new_token(Type type)
         break;
     case integer_:
     case float_:
-
         new->value.type = type;
         double num = 0.0;
         while (ft_isdigit(text[start]))
@@ -618,6 +621,7 @@ Token *new_token(Type type)
     case if_:
     case comma_:
     case end_statement:
+    case tab_:
         ft_printf(out, "new token type: '%t'\n", type);
         break;
     default:
@@ -770,20 +774,16 @@ Node *expr()
         // condition
         node->left = expr();
         // expect :
+        if (tokens[tk_pos]->type != end_statement)
+        {
+            ft_printf(err, "expected ':'\n");
+        }
         tk_pos++;
+        // expect tab
         // bloc
         node->right = expr();
         return node;
     }
-    // else if (tokens[tk_pos]->type == comma_)
-    // {
-    //     // left = new_node(tokens[tk_pos]);
-    //     tk_pos++;
-    //     ft_printf(out, "found comma\n");
-    //     Node *left = expr();
-    //     ft_printf(out, "left comma has type '%t'\n", left->token->type);
-    //     return left;
-    // }
     return assign();
 }
 
@@ -874,10 +874,15 @@ Node *prime()
     else if (
         tokens[tk_pos]->type == lbracket_)
     {
+        ft_printf(out, "get array\n");
         tk_pos++;           // skip 1st bracket
         int start = tk_pos; // replace token that has LEFT bracket by the HEAD of array
         while (tokens[tk_pos]->type != rbracket_)
+        {
             expr();
+            if (tokens[tk_pos]->type == comma_)
+                tk_pos++;
+        }
         // expect RIGHT BRACKET !!!
         ft_printf(out, "start :%d , end :%d\n", start, tk_pos);
         left = new_node(tokens[start]);
@@ -904,10 +909,8 @@ Node *prime()
     {
         ft_printf(out, "build output node\n");
         Node *node = new_node(tokens[tk_pos]);
-        tk_pos++;
-        // expect )
-        node->left = prime();
-        // expect (
+        tk_pos++;             // skip output token
+        node->left = prime(); // prime will skip '(' and ')'
         ft_printf(out, "[%d] -> %t\n", tk_pos, tokens[tk_pos]->type);
         // exit(0);
         return node;
@@ -933,22 +936,37 @@ Val *get_var(char *name)
     return NULL;
 }
 
-Val *new_permanent_var(Val *left, Val *value)
+Val *new_val(Val *var)
 {
-    value->name = left->name;
-    // value->index = left->index;
-    ft_printf(out, "new permanent var will return %v\n", value);
-    PERMANENTS[per_index++] = value;
-    return (value);
+    ft_printf(out, "new varibale\n");
+    PERMANENTS[per_index++] = var;
+    return (var);
 }
 
 Val *eval(Node *node)
 {
     ft_printf(out, "eval received '%t'\n", node->token->type);
+    /*
+    in assignement call eval
+    when you assign a variable change it's type to data type that it's holding it
+    don't assign type variable to variable, because that means that, assigning NONE to NONE
+    */
     if (node->token->type == assign_)
     {
         // to be verified !! try using only eval
+        //  ft_printf(out, "do assignement between type '%v' and '%v' \n", node->left->token->value, node->right->token->value);
         ft_printf(out, "do assignement between type '%t' and '%t' \n", node->left->token->type, node->right->token->type);
+#if 1
+        Val *left = eval(node->left);
+        Val *right = eval(node->right);
+        ft_printf(out, "in assign received '%v' and '%v' \n", left, right);
+        char *name = left->name;
+        memcpy(left, right, sizeof(Val)); // to be changed after
+        left->name = name;
+        ft_printf(out, "after assignement %v\n", left);
+        return left;
+//        exit(0);
+#else
         Val *exist = get_var(node->left->token->value.name);
         if (exist)
         {
@@ -965,7 +983,7 @@ Val *eval(Node *node)
         else
         {
             ft_printf(out, "create new variable\n");
-            Val *left = &node->left->token->value;
+            Val *left = eval(node->left);
             ft_printf(out, "after getting left_val : %v\n", left);
             /////error is here must be fixed
             Val *right = eval(node->right);
@@ -973,6 +991,16 @@ Val *eval(Node *node)
             ////////////////////////////////
             return (new_permanent_var(left, right));
         }
+#endif
+    }
+    else if (node->token->type == variable_)
+    {
+        // in case i declared it and saved it before
+        //  here i will loke for it and return it with it's value and data type
+        Val *exist = get_var(node->token->value.name);
+        if (exist)
+            return exist;
+        return (new_val(&node->token->value));
     }
     else if (node->token->type == integer_ ||
              node->token->type == float_ ||
@@ -984,25 +1012,20 @@ Val *eval(Node *node)
         else
         {
             ft_printf(out, "I'm returning an array \n");
-            // ft_printf(out, "return array , array[0] is '%v' \n", &node->token->value.elems[0]);
-            // ft_printf(out, "               array[1] is '%v' \n", &node->token->value.elems[1]);
-            // ft_printf(out, "               array[2] is '%v' \n", &node->token->value.elems[2]);
-            // ft_printf(out, "               array[3] is '%v' \n", &node->token->value.elems[3]);
         }
         return &node->token->value;
-    }
-    else if (node->token->type == variable_)
-    {
-        return (get_var(node->token->value.name));
     }
     else if (node->token->type == output_)
     {
         // ft_printf(out, "output : '%v'\n", node->left->token->value);
         // ft_printf(out, "output : '%t'\n", node->left->left->token->type);
-
-        output("1", &node->left->token->value);
+        Val *left = eval(node->left);
+        ft_printf(out, "call output: with value %v\n", left);
+        if (left->type == variable_)
+            ft_printf(err, "error: '%s' not found\n", left->name);
+        output("1", left);
         // exit(0);
-        return(NULL);
+        return (left);
     }
     else if (node->token->type == if_)
     {
@@ -1016,8 +1039,8 @@ Val *eval(Node *node)
             }
             else
             {
-                return (NULL); // to be handled after
-                // is false
+                // return var with value false
+                return (left);
             }
         }
         else
@@ -1187,6 +1210,7 @@ void output(char *fmt, ...)
             ft_putstr(fd, "(null var)");
         i++;
     }
+    ft_putchar(fd, '\n');
 }
 
 void execute()
