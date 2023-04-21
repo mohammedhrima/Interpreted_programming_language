@@ -27,7 +27,7 @@ typedef enum
 {
     none_, // skip 0
     // be carefulll before doing any change here !!!
-    variable_,
+    indentifier_,
     characters_,
     boolean_,
     integer_,
@@ -361,7 +361,7 @@ void ft_printf(int fd, char *fmt, ...)
                     ft_putstr(fd, ", value: '");
                     switch (var->type)
                     {
-                    case variable_:
+                    case indentifier_:
                         break;
                     case characters_:
                         ft_putstr(fd, var->characters);
@@ -487,8 +487,8 @@ char *type_to_string(int type)
     {
     // case eof_:
     //     return "EOF";
-    case variable_:
-        return "VARIABLE";
+    case indentifier_:
+        return "IDENTIFIER";
     case characters_:
         return "CHARACTERS";
     case integer_:
@@ -568,7 +568,7 @@ Token *new_token(Type type)
     new->value.index = tk_pos;
     switch (type)
     {
-    case variable_:
+    case indentifier_:
         new->value.type = type;
         new->value.name = calloc(txt_pos - start + 1, sizeof(char));
         ft_strncpy(new->value.name, text + start, txt_pos - start);
@@ -692,7 +692,7 @@ void build_tokens()
             start = txt_pos;
             while (ft_isalnum(text[txt_pos]))
                 txt_pos++;
-            new_token(variable_);
+            new_token(indentifier_);
             continue;
         }
         if (ft_isdigit(text[txt_pos]))
@@ -866,11 +866,12 @@ Node *prime()
         tokens[tk_pos]->type == integer_ ||
         tokens[tk_pos]->type == float_ ||
         tokens[tk_pos]->type == characters_ ||
-        tokens[tk_pos]->type == variable_)
+        tokens[tk_pos]->type == indentifier_)
     {
         left = new_node(tokens[tk_pos]);
         tk_pos++;
     }
+    // id did put if instead of else if for case array[index]
     else if (
         tokens[tk_pos]->type == lbracket_)
     {
@@ -955,11 +956,23 @@ Val *eval(Node *node)
     {
         // to be verified !! try using only eval
         //  ft_printf(out, "do assignement between type '%v' and '%v' \n", node->left->token->value, node->right->token->value);
-        ft_printf(out, "do assignement between type '%t' and '%t' \n", node->left->token->type, node->right->token->type);
+        // ft_printf(out, "left : %v\n",node->left);
+        // ft_printf(out, "right: %v\n",node->right);
+
+       ft_printf(out, "do assignement between type '%t' and '%t' \n", node->left->token->type, node->right->token->type);
 #if 1
         Val *left = eval(node->left);
         Val *right = eval(node->right);
         ft_printf(out, "in assign received '%v' and '%v' \n", left, right);
+        // if (tokens[tk_pos]->type == lbracket_)
+        // {
+        //     tk_pos++;
+        //     Val *index = eval(prime());
+        //     tk_pos++;
+        //     ft_printf(out, "token type now %t and index %v\n", tokens[tk_pos]->type, index);
+
+        //     exit(0);
+        // }
         char *name = left->name;
         memcpy(left, right, sizeof(Val)); // to be changed after
         left->name = name;
@@ -993,14 +1006,30 @@ Val *eval(Node *node)
         }
 #endif
     }
-    else if (node->token->type == variable_)
+    else if (node->token->type == indentifier_)
     {
         // in case i declared it and saved it before
         //  here i will loke for it and return it with it's value and data type
         Val *exist = get_var(node->token->value.name);
         if (exist)
-            return exist;
-        return (new_val(&node->token->value));
+        {
+            if (tokens[tk_pos]->type == lbracket_)
+            {
+                tk_pos++;
+                Val *index = eval(prime());
+                // verify if it's integer
+                tk_pos++;
+                
+                // ft_printf(out, "index: %v\n", index);
+                ft_printf(out, "1024 from %v\n", exist);
+                ft_printf(out, "1025 return %v\n", &exist->elems[(int)index->number]);
+                return(&exist->elems[(int)index->number]);
+            }
+        }
+        if (!exist)
+            exist = new_val(&node->token->value);
+        ft_printf(out, "1031 return %v\n", exist);
+        return (exist);
     }
     else if (node->token->type == integer_ ||
              node->token->type == float_ ||
@@ -1008,10 +1037,11 @@ Val *eval(Node *node)
              node->token->type == array_)
     {
         if (node->token->type != array_)
-            ft_printf(out, "return '%v'\n", node->token->value);
+            ft_printf(out, "1039 return '%v'\n", node->token->value);
         else
         {
-            ft_printf(out, "I'm returning an array \n");
+            ft_printf(out, "I'm returning an array %v\n", &node->token->value);
+            ft_printf(out, "token type now %t\n", tokens[tk_pos]->type);
         }
         return &node->token->value;
     }
@@ -1021,7 +1051,7 @@ Val *eval(Node *node)
         // ft_printf(out, "output : '%t'\n", node->left->left->token->type);
         Val *left = eval(node->left);
         ft_printf(out, "call output: with value %v\n", left);
-        if (left->type == variable_)
+        if (left->type == indentifier_)
             ft_printf(err, "error: '%s' not found\n", left->name);
         output("1", left);
         // exit(0);
@@ -1158,7 +1188,7 @@ void output(char *fmt, ...)
         {
             switch (var->type)
             {
-            case variable_:
+            case indentifier_:
                 break;
             case characters_:
                 ft_putstr(fd, var->characters);
