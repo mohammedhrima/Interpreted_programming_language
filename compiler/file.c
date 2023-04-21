@@ -870,6 +870,12 @@ Node *prime()
     {
         left = new_node(tokens[tk_pos]);
         tk_pos++;
+        if (tokens[tk_pos]->type == lbracket_)
+        {
+            // Node *node = prime();
+            left->left = prime();
+            // expect right bracket
+        }
     }
     // id did put if instead of else if for case array[index]
     else if (
@@ -959,7 +965,7 @@ Val *eval(Node *node)
         // ft_printf(out, "left : %v\n",node->left);
         // ft_printf(out, "right: %v\n",node->right);
 
-       ft_printf(out, "do assignement between type '%t' and '%t' \n", node->left->token->type, node->right->token->type);
+        ft_printf(out, "do assignement between type '%t' and '%t' \n", node->left->token->type, node->right->token->type);
 #if 1
         Val *left = eval(node->left);
         Val *right = eval(node->right);
@@ -1010,21 +1016,35 @@ Val *eval(Node *node)
     {
         // in case i declared it and saved it before
         //  here i will loke for it and return it with it's value and data type
+
         Val *exist = get_var(node->token->value.name);
-        if (exist)
+        if (exist && exist->type == array_)
         {
+#if 0
+            if (node->left)
+            {
+                ft_printf(out, "identifier '%s' has a left '%t'\n", node->token->value.name, node->left->token->type);
+                ft_printf(out, "with value %v' -> '%f'\n", &node->left->token->value.elems[0], node->left->token->value.elems[0].number);
+                ft_printf(out, "identifier '%s' is '%v'\n", node->token->value.name, exist);
+                ft_printf(out, "return %v'\n", exist->elems[(int)node->left->token->value.elems[0].number]);
+
+
+                exit(0);
+            }
+#else
             if (tokens[tk_pos]->type == lbracket_)
             {
                 tk_pos++;
                 Val *index = eval(prime());
                 // verify if it's integer
                 tk_pos++;
-                
+
                 // ft_printf(out, "index: %v\n", index);
                 ft_printf(out, "1024 from %v\n", exist);
                 ft_printf(out, "1025 return %v\n", &exist->elems[(int)index->number]);
-                return(&exist->elems[(int)index->number]);
+                return (&exist->elems[(int)index->number]);
             }
+#endif
         }
         if (!exist)
             exist = new_val(&node->token->value);

@@ -11,6 +11,7 @@ april 21 target:
     build output functions, should print message
     use the uouput function to debug if statement to improve it
 
+should repeat the code to handle the difrence between array of string s and numbers...
 
 /*
 x = (5 == 5)

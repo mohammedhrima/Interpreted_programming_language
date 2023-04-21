@@ -1,2 +1,2 @@
-array = [11,22,5,6]
-x = array[2]
+students = ["moh, "am", "med", "zi", "yad", "fgog", "jjw, "iwj"]
+output(students[2])
