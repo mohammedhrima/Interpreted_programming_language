@@ -1,3 +1,5 @@
+- I should organize my work !!!
+
 0- in assignement variable name on left and value on right
 1- read and assign variable
 2- handle error expecting error
