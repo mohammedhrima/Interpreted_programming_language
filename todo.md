@@ -1,52 +1,27 @@
-- I should organize my work !!!
+before starting do some researches for each step if there is extra things
+check crafting interpreter steps
 
-result:
+0- handle errors for each step
+1- save data types, and assignment
+2- iteration over data types
+3- add operator for all data types
+4- merge steps 1,2,3
+5- handle errors for all above steps
+6- output function
+7- if statement:
+8- when you get here, plan for next steps
 
-- garbage collector
 
-- data types:
-  boolean:
-    true, false
-  string: string | character
-    "hello world" | 'hello world'
-  number: integer | float
 
-- arithmetic:
-  '<' : less than
-  '>' : more than
-  '+' : add
-  '-' : subtract
-  '/' : divide
-  '==' , 'is' : check if two values are equal
-  '!' , 'not' : check if not
-  '!=' , 'is not' : check if two values are not equal
-  '++' : increment
-  '--' : decrement
 
-- printf:
-  output("some text")
 
-- if-statement:
-  if something1:
-  action1
-  else if something2:
-  action2
-  else:
-  action3
+statements, if while for
+input function
+functions(parm1, param2) ...
+functions returns
+garbage collector
+standart libraries
 
-- while-loop:
-  while something1:
-  action1
 
-- functions:
-  fun function_name(parm1, param2):
-  do something
-  return something
 
-- expect new line at the end of each line
-- varibale name can contains number also
-- build ide that support it
-- add thread that check available temporary and permanent variables
-- Nunabale variables
-- array of arrays
-- object
+
