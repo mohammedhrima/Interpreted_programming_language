@@ -16,6 +16,7 @@
 // typedefs
 typedef struct Node Node;
 typedef struct Token Token;
+typedef struct Token Value;
 
 // for the stupid implicit declaration error
 void ft_printf(int fd, char *fmt, ...);
@@ -352,7 +353,7 @@ void ft_printf(int fd, char *fmt, ...)
                 Type type = va_arg(ap, Type);
                 ft_putstr(fd, type_to_string(type));
             }
-            if (fmt[i] == 'k')
+            if (fmt[i] == 'k' || fmt[i] == 'v')
             {
                 Token *token = va_arg(ap, Token *);
                 if (token)
@@ -389,7 +390,7 @@ void ft_printf(int fd, char *fmt, ...)
                         for (int i = 0; i < token->array_len; i++)
                         {
                             ft_putstr(fd, "\n     ");
-                            ft_printf(fd, "%k", token->array[i]);
+                            ft_printf(fd, "%k", &token->array[i]);
                         }
                         ft_putstr(fd, "\n     with size: ");
                         ft_putnbr(fd, token->array_len);
@@ -577,14 +578,14 @@ Token *new_token(Type type)
     {
         new->name = calloc(txt_pos - start + 1, sizeof(char));
         ft_strncpy(new->name, text + start, txt_pos - start);
-        ft_printf(out, "new token %k\n", new);
+        ft_printf(out, "new token: %k\n", new);
+        break;
     }
-    break;
     case characters_:
     {
         new->characters = calloc(txt_pos - start + 1, sizeof(char));
         ft_strncpy(new->characters, text + start, txt_pos - start);
-        ft_printf(out, "new token %k\n", new);
+        ft_printf(out, "new token: %k\n", new);
         break;
     }
     case integer_:
@@ -606,12 +607,12 @@ Token *new_token(Type type)
             start++;
         }
         new->number = num;
-        ft_printf(out, "new token %k\n", new);
+        ft_printf(out, "new token: %k\n", new);
         break;
     }
     case boolean_:
     {
-        ft_printf(out, "new token %k\n", new);
+        ft_printf(out, "new token: %k\n", new);
         break;
     }
     case assign_:
@@ -757,7 +758,8 @@ Token *build_tokens()
         }
         ft_printf(err, "Unknown value s:'%s', c:'%c', d:'%d' \n", text + txt_pos, text[txt_pos], text[txt_pos]);
     }
-    return (new_token(eof_));
+    // return (new_token(eof_));
+    return NULL;
 }
 
 // build nodes
@@ -772,14 +774,37 @@ Node *new_node(Token *token)
 {
     Node *new = calloc(1, sizeof(Token));
     new->token = token;
-    ft_printf(out, "new node '%k'\n", new->token);
+    ft_printf(out, "new node: %k\n", new->token);
+    return (new);
+}
+
+Value *new_array_node(int len)
+{
+    Value *new = calloc(1, sizeof(Value));
+    new->type = array_;
+    new->array = calloc(len + 2, sizeof(Value));
+    new->array_len = len;
+    int j = 0;
+    Value *curr = eval(expr());
+    while (curr)
+    {
+#if 1
+        new->array[j] = *curr;
+        curr = eval(expr());
+#else
+        new->array[j] = *tokens[tk_pos]; // copy only value
+        tk_pos++;
+#endif
+        ft_printf(out, "new[%d]: %k\n", j, &new->array[j]);
+        j++;
+    }
     return (new);
 }
 
 void skip(Type type)
 {
     if (tokens[tk_pos]->type != type)
-        ft_printf(err, "error current type is '%t' and want to skip '%t'\n", tokens[tk_pos]->type, type);
+        ft_printf(err, "error current type is '%t' and want to skip '%t in pos '%d''\n", tokens[tk_pos]->type, type, tk_pos);
     tk_pos++;
 }
 
@@ -791,7 +816,9 @@ Node *expr()
 Node *assign()
 {
     Node *left = add_sub();
-    if (tokens[tk_pos]->type == assign_)
+    if (tokens[tk_pos]->type == comma_)
+        tk_pos++;
+    else if (tokens[tk_pos]->type == assign_)
     {
         Node *node = new_node(tokens[tk_pos]);
         node->left = left;
@@ -859,10 +886,41 @@ Node *prime()
         tokens[tk_pos]->type == characters_ ||
         tokens[tk_pos]->type == boolean_ ||
         tokens[tk_pos]->type == identifier_ ||
+        tokens[tk_pos]->type == array_ ||
         tokens[tk_pos]->type == end_statement_)
     {
         left = new_node(tokens[tk_pos]);
         skip(tokens[tk_pos]->type);
+    }
+    while (tokens[tk_pos]->type == lbracket_)
+    {
+        // tokens[tk_pos]->type = array_;
+        skip(lbracket_);
+        Token *new = calloc(1, sizeof(Token));
+        new->type = array_;
+        left = new_node(new);
+        int len = 0;
+        start = tk_pos;
+        Node *curr = expr();
+        while (curr)
+        {
+#if 1
+            curr = expr();
+#else
+            // ft_printf(out, "%k\n", tokens[tk_pos]);
+            // tk_pos++;
+#endif
+            len++;
+            // if (tokens[tk_pos]->type != rbracket_)
+            //     skip(comma_);
+        }
+        skip(rbracket_);
+        tk_pos = start;
+        ft_printf(out, "start: %d, tk_pos: %d\n", start, tk_pos);
+        Value *value = new_array_node(len);
+        left->token->array = value->array;
+        left->token->array_len = value->array_len;
+        ft_printf(out, "array now: %k\n", value);
     }
     return left;
 }
@@ -884,27 +942,32 @@ Token *new_variable(Token *var)
     return (var);
 }
 
-Token *eval(Node *node)
+Value *eval(Node *node)
 {
     if (node == NULL)
         return NULL;
-    ft_printf(out, "eval received '%t'\n", node->token->type);
+    ft_printf(out, "eval received %t\n", node->token->type);
+    // if(node->token->type == array_)
+    // {
+    //     ft_printf(out, "=> %k\n",node->token );
+    //     exit(0);
+    // }
     switch (node->token->type)
     {
     // assignement
     case assign_:
     {
-        Token *left = eval(node->left);
-        Token *right = eval(node->right);
+        Value *left = eval(node->left);
+        Value *right = eval(node->right);
         char *name = left->name;
-        memcpy(left, right, sizeof(Token));
+        memcpy(left, right, sizeof(Value));
         left->name = name;
         return left;
     }
     // identifier
     case identifier_:
     {
-        Token *identifier = get_var(node->token->name);
+        Value *identifier = get_var(node->token->name);
         if (identifier)
             return (identifier);
         else
@@ -914,8 +977,12 @@ Token *eval(Node *node)
     case integer_:
     case float_:
     case characters_:
-    case array_:
     case boolean_:
+    {
+        ft_printf(out, "return %k\n", node->token);
+        return (node->token);
+    }
+    case array_:
     {
         ft_printf(out, "return %k\n", node->token);
         return (node->token);
@@ -924,16 +991,16 @@ Token *eval(Node *node)
     case add_:
     {
         node->token->type = integer_;
-        Token *left = eval(node->left);
-        Token *right = eval(node->right);
+        Value *left = eval(node->left);
+        Value *right = eval(node->right);
         node->token->number = left->number + right->number;
         return (node->token);
     }
     case mul_:
     {
         node->token->type = integer_;
-        Token *left = eval(node->left);
-        Token *right = eval(node->right);
+        Value *left = eval(node->left);
+        Value *right = eval(node->right);
         node->token->number = left->number * right->number;
         return (node->token);
     }
