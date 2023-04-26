@@ -389,12 +389,13 @@ void ft_printf(int fd, char *fmt, ...)
                             ft_putstr(fd, "false");
                         break;
                     case array_:
-                        ft_putstr(fd, " ,value: \n");
+                        ft_putstr(fd, " ,value: ");
                         for (int i = 0; i < token->array_len; i++)
                         {
-                            ft_printf(fd, "         %k\n", token->array[i]);
+                            ft_putstr(fd, "\n     ");
+                            ft_printf(fd, "%k", token->array[i]);
                         }
-                        ft_putstr(fd, "     with size: ");
+                        ft_putstr(fd, "\n     with size: ");
                         ft_putnbr(fd, token->array_len);
                         break;
                     case assign_:
@@ -805,7 +806,9 @@ Value *new_array_node(int len)
     return (new);
 }
 
+
 #endif
+
 
 void skip(Type type)
 {
@@ -899,36 +902,24 @@ Node *prime()
     }
     else if (tokens[tk_pos]->type == lbracket_)
     {
+        // tokens[tk_pos]->type = array_;
         left = new_node(tokens[tk_pos]);
+        assert(left->token->type == lbracket_);
         skip(lbracket_);
-        int len = 0;
-        Node *curr = NULL;
-        Node *head = NULL;
-        if (tokens[tk_pos]->type != rbracket_) // enter if array is not empty
+
+        if (tokens[tk_pos]->type != rbracket_)
         {
-            curr = assign();
-            head = curr;
-            len++;
+            left->first_in_arr = assign();
+            left->array_len++;
+            Node *curr = left->first_in_arr;
             while (tokens[tk_pos]->type != rbracket_)
             {
                 skip(comma_);
-                curr->left = assign();
-                curr = curr->left;
-                len++;
+                left->array_len++;
+                curr = curr->next_in_arr = assign();
             }
         }
         skip(rbracket_);
-        left->token->type = array_;
-        left->token->array = calloc(len + 1, sizeof(Value *));
-        left->token->array_len = len;
-        int i = 0;
-        while (head)
-        {
-            left->token->array[i] = eval(head);
-            // ft_printf(out, "--> %k\n", left->token->array[i]);
-            head = head->left;
-            i++;
-        }
     }
     return left;
 }
@@ -957,7 +948,7 @@ Value *eval(Node *node)
     ft_printf(out, "eval received %t\n", node->token->type);
     switch (node->token->type)
     {
-
+    
     // assignement
     case assign_:
     {
@@ -986,8 +977,21 @@ Value *eval(Node *node)
         ft_printf(out, "return %k\n", node->token);
         return (node->token);
     }
-    case array_:
+    case lbracket_:
     {
+        Value *v = calloc(1, sizeof(Value));
+        v->type = array_;
+        v->array = calloc(node->array_len, sizeof(Value *));
+        v->array_len = node->array_len;
+        Node *curr = node->first_in_arr;
+        int i = 0;
+        while (curr)
+        {
+            v->array[i] = eval(curr);
+            curr = curr->next_in_arr;
+            i++;
+        }
+        node->token = v;
         ft_printf(out, "return %k\n", node->token);
         return (node->token);
     }
@@ -1017,10 +1021,11 @@ Value *eval(Node *node)
 // execute
 void execute()
 {
-
+   
     while (tokens[tk_pos]->type != eof_)
     {
-        eval(expr());
+       eval(expr());
+    
     }
 }
 
