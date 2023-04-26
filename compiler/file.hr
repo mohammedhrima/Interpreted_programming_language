@@ -1,1 +1,1 @@
-x = {stname: "mohammed",ndname:"hrima" }
+{stname: "mohammed", ndname:"hrima", age:10 }

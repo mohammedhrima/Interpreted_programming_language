@@ -7,7 +7,7 @@
     x = ["h","e","l","l","o","w","o","r","d"]
     x = [y , 1 , 2]
     x = [ [1,2,3], [1,2,3], ["a","b","c"] ]
-    x = {stname:"user",ndname:"user",age:12 }
+    x = {stname:"user1",ndname:"user1",age:12 }
     x = true
     x = false
 

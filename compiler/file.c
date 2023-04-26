@@ -34,6 +34,7 @@ typedef enum
     integer_,
     float_,
     array_,
+    obj_,
     assign_,
     equal_,
     not_equal_,
@@ -84,9 +85,9 @@ struct Token
         // type object
         struct
         {
-            char **keys;
-            Token *values;
-            int object_size;
+            // char **keys;
+            Token **obj;
+            int obj_size;
         };
     };
 };
@@ -148,9 +149,9 @@ struct Node
 {
     Node *left;
     Node *right;
-    Node *first_in_arr;
-    Node *next_in_arr;
-    int array_len;
+    // Node *first_in_arr;
+    // Node *next_in_arr;
+    // int array_len;
     Token *token;
 };
 
@@ -397,6 +398,15 @@ void ft_printf(int fd, char *fmt, ...)
                         ft_putstr(fd, "     with size: ");
                         ft_putnbr(fd, token->array_len);
                         break;
+                    case obj_:
+                        ft_putstr(fd, " ,value: \n");
+                        for (int i = 0; i < token->obj_size; i++)
+                        {
+                            ft_printf(fd, "         %k\n", token->obj[i]);
+                        }
+                        ft_putstr(fd, "     with size: ");
+                        ft_putnbr(fd, token->obj_size);
+                        break;
                     case assign_:
                     case equal_:
                     case new_line_:
@@ -560,6 +570,8 @@ char *type_to_string(int type)
         return "NEW LINE  ";
     case eof_:
         return "EOF        ";
+    case obj_:
+        return"OBJ";
     default:
         ft_putstr(err, "error not found in type_to_string '");
         ft_putnbr(err, type);
@@ -780,33 +792,6 @@ Node *new_node(Token *token)
     return (new);
 }
 
-#if 0
-
-Value *new_array_node(int len)
-{
-    Value *new = calloc(1, sizeof(Value));
-    new->type = array_;
-    new->array = calloc(len + 2, sizeof(Value));
-    new->array_len = len;
-    int j = 0;
-    Value *curr = eval(expr());
-    while (curr)
-    {
-#if 1
-        new->array[j] = *curr;
-        curr = eval(expr());
-#else
-        new->array[j] = *tokens[tk_pos]; // copy only value
-        tk_pos++;
-#endif
-        ft_printf(out, "new[%d]: %k\n", j, &new->array[j]);
-        j++;
-    }
-    return (new);
-}
-
-#endif
-
 void skip(Type type)
 {
     if (tokens[tk_pos]->type != type)
@@ -821,7 +806,7 @@ Node *expr()
 
 Node *assign()
 {
-    ft_printf(out, "call asign\n");
+    ft_printf(out, "call assign\n");
     Node *left = add_sub();
 
     if (tokens[tk_pos]->type == assign_)
@@ -899,7 +884,7 @@ Node *prime()
     }
     else if (tokens[tk_pos]->type == lbracket_)
     {
-        left = new_node(tokens[tk_pos]);
+        left = new_node(tokens[tk_pos]); // will be set to array_ in next steps
         skip(lbracket_);
         int len = 0;
         Node *curr = NULL;
@@ -909,7 +894,7 @@ Node *prime()
             curr = assign();
             head = curr;
             len++;
-            while (tokens[tk_pos]->type != rbracket_)
+            while (tokens[tk_pos]->type != rbracket_ && tokens[tk_pos]->type != eof_)
             {
                 skip(comma_);
                 curr->left = assign();
@@ -928,6 +913,55 @@ Node *prime()
             // ft_printf(out, "--> %k\n", left->token->array[i]);
             head = head->left;
             i++;
+        }
+    }
+    /// working here
+    else if (tokens[tk_pos]->type == lcbracket_)
+    {
+        left = new_node(tokens[tk_pos]);
+        skip(lcbracket_);
+        if (tokens[tk_pos]->type != rcbracket_)
+        {
+            int len = 1;
+            /////////////////
+            Node *identifier = prime(); // expect identifier
+            char *name = identifier->token->name;
+            // expect :
+            skip(dots_);
+            Node *node = prime(); // expect a value
+            Node *node_head;
+            node->token->name = name;
+            node_head = node;
+            if (tokens[tk_pos]->type != rcbracket_)
+                skip(comma_);
+            while (tokens[tk_pos]->type != rcbracket_ && tokens[tk_pos]->type != eof_)
+            {
+                identifier = prime(); // expect type identifier
+                name = identifier->token->name;
+                // expect :
+                skip(dots_);
+                node->left = add_sub(); // expect a value
+                node->left->token->name = name;
+                node = node->left;
+                // expect comma if it's not '}'
+                if (tokens[tk_pos]->type != rcbracket_)
+                    skip(comma_);
+                len++;
+            }
+            ft_printf(out, "len : %d\n\n", len);
+            left->token->type = obj_;
+            left->token->obj = calloc(len + 1, sizeof(Token));
+            left->token->obj_size = len;
+            int i = 0;
+            while (i < len)
+            {
+                left->token->obj[i] = node_head->token;
+                // ft_printf(out, "%k\n", node_head->token);
+                node_head = node_head->left;
+                i++;
+            }
+            ft_printf(out, "%v", left->token);
+            exit(0);
         }
     }
     return left;
