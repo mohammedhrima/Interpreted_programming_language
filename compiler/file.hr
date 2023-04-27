@@ -1,14 +1,16 @@
-x = [
-        {
-            name: "user1",
-            age: 12
-        },
-        {
-            name: "user2",
-            age: 10
-        },
-        {
-            name: "user3",
-            age: 15
-        },
-    ]
+list = [
+    {
+        name:"user1",
+        age:10
+    },
+    {
+        name:"user2",
+        age:11
+    },
+    {
+        name:"user3",
+        age:12
+    },
+]
+
+n = list[1].name

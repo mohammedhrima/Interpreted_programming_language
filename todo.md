@@ -3,13 +3,16 @@ check crafting interpreter steps
 
 0- handle errors for each step
 1- save data types, and assignment
-2- iteration over data types
-3- add operator for all data types
-4- merge steps 1,2,3
-5- handle errors for all above steps
-6- output function
-7- if statement:
-8- when you get here, plan for next steps
+2- add operator for all data types
+3- iteration over data types
+
+5- logic operator (and, or)
+6- merge steps 1,2,3
+7- handle errors for all above steps
+8- output function
+9- if statement:
+4- add attributes for all data types
+10- when you get here, plan for next steps
 
 
 
