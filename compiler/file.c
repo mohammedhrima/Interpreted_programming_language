@@ -67,6 +67,10 @@ typedef enum
     iteration_,
     length_,
     dot_,
+    add_me,
+    sub_me,
+    mul_me,
+    div_me,
 } Type;
 
 struct Token
@@ -127,6 +131,10 @@ struct
     {"or ", or_},
     {"==", equal_},
     {"!=", not_equal_},
+    {"+=", add_me},
+    {"-=", sub_me},
+    {"*=", mul_me},
+    {"/=", div_me},
     {"<", less_than_},
     {">", more_than_},
     {"<=", less_than_or_equal_},
@@ -470,6 +478,12 @@ void ft_printf(int fd, char *fmt, ...)
                     case length_:
                     case dot_:
                     case output_:
+                    case add_me:
+                    case sub_me:
+                    case mul_me:
+                    case div_me:
+                    case and_:
+                    case or_:
                         break;
                     default:
                         ft_putstr(err, "ft_printf didn't know this token type: ");
@@ -540,26 +554,33 @@ void output(Token *token)
                         break;
                     }
                 }
-                ft_putchar(fd, string[i]);
                 if (string[i] == '\0')
                     break;
+                ft_putchar(fd, string[i]);
                 i++;
             }
+            break;
         }
-        break;
         case integer_:
+        {
             ft_putfloat(fd, token->number, 0);
             break;
+        }
         case float_:
+        {
             ft_putfloat(fd, token->number, 6);
             break;
+        }
         case boolean_:
+        {
             if (token->boolean)
                 ft_putstr(fd, "true");
             else
                 ft_putstr(fd, "false");
             break;
+        }
         case array_:
+        {
             ft_putstr(fd, "[ ");
             for (int i = 0; i < token->array_len; i++)
             {
@@ -569,22 +590,47 @@ void output(Token *token)
             }
             ft_putstr(fd, " ]");
             break;
+        }
         case obj_:
+        {
             ft_putstr(fd, "{\n");
             for (int i = 0; i < token->object_len; i++)
             {
-                ft_putstr(fd,"    ");
-                ft_putstr(fd, token->object[i]->name);
+                ft_putstr(fd, "    ");
+                // ft_putstr(fd, token->object[i]->name);
+
+                char *string = token->object[i]->name;
+                int k = 0;
+                while (string[k])
+                {
+                    for (int j = 0; special_characters[j].special; j++)
+                    {
+                        if (ft_strncmp(&string[k], special_characters[j].special, ft_strlen(special_characters[j].special)) == 0)
+                        {
+                            ft_putchar(fd, special_characters[j].replace);
+                            k += ft_strlen(special_characters[j].special);
+                            break;
+                        }
+                    }
+                    if (string[k] == '\0')
+                        break;
+                    ft_putchar(fd, string[k]);
+                    k++;
+                }
+
                 ft_putstr(fd, ": ");
                 output(token->object[i]);
                 if (i < token->object_len - 1)
                     ft_putstr(fd, ",\n");
             }
-            ft_putstr(fd, "\n}");
+            ft_putstr(fd, "\n }");
             break;
+        }
         default:
+        {
             ft_putstr(err, "Error in ouput\n");
             exit(1);
+        }
         }
     }
     else
@@ -665,6 +711,10 @@ char *type_to_string(int type)
         {"ITERATION", iteration_},
         {"LENGTH", length_},
         {"DOT", dot_},
+        {"ADD ME", add_me},
+        {"SUB ME", sub_me},
+        {"DIV ME", div_me},
+        {"MUL ME", mul_me},
         {0, 0},
     };
     for (int i = 0; Types[i].string; i++)
@@ -672,9 +722,10 @@ char *type_to_string(int type)
         if (Types[i].type == type)
             return (Types[i].string);
     }
-    ft_putstr(err, "Error: type note found '");
+    ft_putstr(err, "Error: type not found '");
     ft_putnbr(err, type);
     ft_putstr(err, "'\n");
+    exit(1);
     return NULL;
 }
 
@@ -755,6 +806,12 @@ Token *new_token(Type type)
     case iteration_:
     case length_:
     case dot_:
+    case add_me:
+    case sub_me:
+    case div_me:
+    case mul_me:
+    case or_:
+    case and_:
         ft_printf(out, "new token: %k\n", new);
         break;
     default:
@@ -909,6 +966,8 @@ Token *build_tokens()
 // build nodes
 Node *expr();       //
 Node *assign();     // =
+Node *logic_or();   // || or
+Node *logic_and();  // && and
 Node *equality();   // ==  !=
 Node *comparison(); // < > <= >=
 Node *add_sub();    // + -
@@ -941,12 +1000,52 @@ Node *expr()
 Node *assign()
 {
     // ft_printf(out, "call assign %t\n", tokens[tk_pos]->type);
-    Node *left = equality();
+    Node *left = logic_or();
     if (tokens[tk_pos]->type == assign_)
     {
         Node *node = new_node(tokens[tk_pos]);
         skip(tokens[tk_pos]->type);
         node->left = left;
+        node->right = logic_or();
+        left = node;
+    }
+    else if (
+        tokens[tk_pos]->type == add_me ||
+        tokens[tk_pos]->type == sub_me ||
+        tokens[tk_pos]->type == mul_me ||
+        tokens[tk_pos]->type == div_me)
+    {
+        Node *node = new_node(tokens[tk_pos]);
+        skip(tokens[tk_pos]->type);
+        node->left = left;
+        node->right = logic_or();
+        left = node;
+    }
+    return left;
+}
+
+Node *logic_or()
+{
+    Node *left = logic_and();
+    if (tokens[tk_pos]->type == and_)
+    {
+        Node *node = new_node(tokens[tk_pos]);
+        node->left = left;
+        skip(tokens[tk_pos]->type);
+        node->right = logic_and();
+        left = node;
+    }
+    return left;
+}
+
+Node *logic_and()
+{
+    Node *left = equality();
+    if (tokens[tk_pos]->type == or_)
+    {
+        Node *node = new_node(tokens[tk_pos]);
+        node->left = left;
+        skip(tokens[tk_pos]->type);
         node->right = equality();
         left = node;
     }
@@ -1440,12 +1539,77 @@ Value *eval(Node *node)
             ft_strcpy(node->token->characters + ft_strlen(node->token->characters), right->characters);
             // ft_printf(out, "result: %k\n", node->token);
         }
+        else if (
+            node->token->type == add_ && (left->type == array_ && right->type == array_))
+        {
+            node->token->type = array_;
+            node->token->array_len = left->array_len + right->array_len;
+            node->token->array = calloc(node->token->array_len + 1, sizeof(Token *));
+            memcpy(node->token->array, left->array, left->array_len * sizeof(Token *));
+            memcpy(&node->token->array[left->array_len], right->array, right->array_len * sizeof(Token *));
+        }
         else
         {
             ft_printf(err, "Error 1: in eval in '%t'\n       left: '%v'\n       right: '%v'\n", node->token->type, left, right);
         }
-        ft_printf(out, "return: %k\n", node->token);
+        // ft_printf(out, "return: %k\n", node->token);
         return (node->token);
+    }
+    case add_me:
+    case sub_me:
+    case mul_me:
+    case div_me:
+    {
+        Value *left = eval(node->left);
+        Value *right = eval(node->right);
+        ft_printf(out, "do %t between %v and %v\n", node->token->type, left, right);
+        if (
+            (left->type == integer_ && right->type == integer_) ||
+            (left->type == float_ && right->type == float_) ||
+            (left->type == integer_ && right->type == float_) ||
+            (left->type == float_ && right->type == integer_))
+        {
+            long double number = 0.0;
+            if (node->token->type == add_me)
+                number = left->number + right->number;
+            if (node->token->type == sub_me)
+                number = left->number - right->number;
+            if (node->token->type == mul_me)
+                number = left->number * right->number;
+            if (node->token->type == div_me)
+                number = left->number / right->number;
+            node->token->type = (left->type == float_ || right->type == float_) ? float_ : integer_;
+            left->number = number;
+        }
+        else if (
+            node->token->type == add_me &&
+            ((left->type == characters_ && right->type == characters_) ||
+             (left->type == character_ && right->type == characters_) ||
+             (left->type == characters_ && right->type == character_) ||
+             (left->type == character_ && right->type == character_)))
+        {
+            node->token->type = (left->type == characters_ || right->type == characters_) ? characters_ : character_;
+            node->token->characters = calloc(ft_strlen(left->characters) + ft_strlen(right->characters) + 1, sizeof(char));
+            ft_strcpy(node->token->characters, left->characters);
+            ft_strcpy(node->token->characters + ft_strlen(node->token->characters), right->characters);
+            left->characters = node->token->characters;
+        }
+        else if (
+            node->token->type == add_me && (left->type == array_ && right->type == array_))
+        {
+            node->token->type = array_;
+            node->token->array_len = left->array_len + right->array_len;
+            node->token->array = calloc(node->token->array_len + 1, sizeof(Token *));
+            memcpy(node->token->array, left->array, left->array_len * sizeof(Token *));
+            memcpy(&node->token->array[left->array_len], right->array, right->array_len * sizeof(Token *));
+            left->array = node->token->array;
+        }
+        else
+        {
+            ft_printf(err, "Error 1: in eval in '%t'\n       left: '%v'\n       right: '%v'\n", node->token->type, left, right);
+        }
+        // left = node->token;
+        return NULL;
     }
     case equal_:
     case not_equal_:

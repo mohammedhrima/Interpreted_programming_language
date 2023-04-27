@@ -15,7 +15,6 @@
     x = "hello word"
     y = x[0]     -> y = 'h'
     x[0] = 'a'   -> x = "aello word"
-    x[0] = 'abc' -> x = "abclo word"
     x = [1,2,3]
     x[0] = 5 -> x = [5,2,3]
 
