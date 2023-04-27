@@ -82,6 +82,7 @@ struct Token
     Type type;
     int index;
     int level;
+    int line;
     union
     {
         long double number; // type integer, float
@@ -217,7 +218,8 @@ int tk_pos;
 int tmp_pos;
 Token *VARIABLES[500];
 int var_index;
-int line;
+int line = 1;
+int level;
 int start;
 
 // character methods
@@ -388,7 +390,6 @@ void ft_printf(int fd, char *fmt, ...)
     if (DEBUG || fd == err)
     {
         va_list ap;
-        line++;
         va_start(ap, fmt);
         int i = 0;
         while (fmt && fmt[i])
@@ -506,8 +507,11 @@ void ft_printf(int fd, char *fmt, ...)
                             ft_putstr(err, type_to_string(token->type));
                             exit(1);
                         }
-                        ft_putstr(fd, ", in position [");
-                        ft_putnbr(fd, token->index);
+                        // ft_putstr(fd, ", in position [");
+                        // ft_putnbr(fd, token->index);
+                        // ft_putstr(fd, "]");
+                        ft_putstr(fd, ", in line [");
+                        ft_putnbr(fd, token->line);
                         ft_putstr(fd, "]");
                         ft_putstr(fd, ", in level [");
                         ft_putnbr(fd, token->level);
@@ -751,11 +755,12 @@ char *type_to_string(int type)
     return NULL;
 }
 
-Token *new_token(Type type, int level)
+Token *new_token(Type type)
 {
     Token *new = calloc(1, sizeof(Token));
     new->type = type;
     new->index = tk_pos;
+    new->line = line;
     new->level = level;
     switch (type)
     {
@@ -849,7 +854,7 @@ Token *new_token(Type type, int level)
 
 char *tab_space = "    ";
 // Tokenize
-Token *build_tokens(int curr_level)
+Token *build_tokens()
 {
     Token *token;
     // int curr_level = 0;
@@ -859,13 +864,14 @@ Token *build_tokens(int curr_level)
             break;
         if (text[txt_pos] == '\n')
         {
-            curr_level = 0;
+            level = 0;
+            line++;
             txt_pos++;
             continue;
         }
         if (ft_strncmp(text + txt_pos, tab_space, ft_strlen(tab_space)) == 0)
         {
-            curr_level++;
+            level++;
             text += ft_strlen(tab_space);
             continue;
         }
@@ -886,9 +892,9 @@ Token *build_tokens(int curr_level)
         }
         if (type)
         {
-            new_token(type, curr_level);
+            new_token(type);
             if (type == dots_)
-                curr_level++;
+                level++;
             continue;
         }
         type = 0;
@@ -903,7 +909,7 @@ Token *build_tokens(int curr_level)
         }
         if (type)
         {
-            new_token(type, curr_level);
+            new_token(type);
             continue;
         }
         type = 0;
@@ -918,7 +924,7 @@ Token *build_tokens(int curr_level)
         }
         if (type)
         {
-            new_token(type, curr_level);
+            new_token(type);
             continue;
         }
         type = 0;
@@ -933,13 +939,13 @@ Token *build_tokens(int curr_level)
         }
         if (type)
         {
-            new_token(type, curr_level);
+            new_token(type);
             continue;
         }
         int isboolean = ft_strcmp(text + txt_pos, "true");
         if (isboolean == 0 || isboolean == ' ' || isboolean == '\n')
         {
-            token = new_token(boolean_, curr_level);
+            token = new_token(boolean_);
             token->boolean = true;
             txt_pos += ft_strlen("true");
             continue;
@@ -947,7 +953,7 @@ Token *build_tokens(int curr_level)
         isboolean = ft_strcmp(text + txt_pos, "false");
         if (isboolean == 0 || isboolean == ' ' || isboolean == '\n')
         {
-            token = new_token(boolean_, curr_level);
+            token = new_token(boolean_);
             token->boolean = false;
             txt_pos += ft_strlen("false");
             continue;
@@ -957,7 +963,7 @@ Token *build_tokens(int curr_level)
             start = txt_pos;
             while (ft_isalnum(text[txt_pos]))
                 txt_pos++;
-            new_token(identifier_, curr_level);
+            new_token(identifier_);
             continue;
         }
         if (ft_isdigit(text[txt_pos]))
@@ -974,7 +980,7 @@ Token *build_tokens(int curr_level)
             }
             while (ft_isdigit(text[txt_pos]))
                 txt_pos++;
-            new_token(tmp_type, curr_level);
+            new_token(tmp_type);
             continue;
         }
         if (text[txt_pos] == '"' || text[txt_pos] == '\'')
@@ -986,13 +992,13 @@ Token *build_tokens(int curr_level)
             if (text[txt_pos] != text[start])
                 ft_printf(err, "expected '%c'\n", text[start]);
             start++;
-            new_token(characters_, curr_level);
+            new_token(characters_);
             txt_pos++;
             continue;
         }
         ft_printf(err, "Unknown value s:'%s', c:'%c', d:'%d' \n", text + txt_pos, text[txt_pos], text[txt_pos]);
     }
-    return (new_token(eof_, curr_level));
+    return (new_token(eof_));
     // return NULL;
 }
 
@@ -1081,6 +1087,10 @@ Node *tenary()
             list = realloc(list, (len + 1) * sizeof(Node *));
         }
         skip(dots_);
+        // expect tab
+        if (tokens[tk_pos + 1]->level <= if_level)
+            ft_printf(err, "expected %d tab(s) in line %d\n", if_level + 1, tokens[tk_pos + 1]->line);
+        ///
         node->token->conditions_head = list;
         node->token->conditions_len = len;
         // get block
@@ -1935,7 +1945,7 @@ int main(void)
         ft_printf(out, "%s\n", text);
         indexes();
     }
-    build_tokens(0);
+    build_tokens();
     tmp_pos = tk_pos;
     tk_pos = 0;
     execute();
