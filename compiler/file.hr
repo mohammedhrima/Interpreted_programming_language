@@ -1,1 +1,14 @@
-{stname: "mohammed", ndname:"hrima", age:10 }
+x = [
+        {
+            name: "user1",
+            age: 12
+        },
+        {
+            name: "user2",
+            age: 10
+        },
+        {
+            name: "user3",
+            age: 15
+        },
+    ]
