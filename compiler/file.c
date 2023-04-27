@@ -93,6 +93,13 @@ struct Token
             int object_len;
             Node **object_head;
         };
+        // output_
+        struct
+        {
+            // Token **params;
+            int params_len;
+            Node **params_head;
+        };
     };
 };
 
@@ -142,6 +149,19 @@ struct
 
 struct
 {
+    char *special;
+    char replace;
+} special_characters[] =
+    {
+        {"\\n", '\n'},
+        {"\\\"", '\"'},
+        {"\\\'", '\''},
+        {"\\\\", '\\'},
+        {0, 0},
+};
+
+struct
+{
     char *name;
     Type type;
 } attributes_tokens[] = {
@@ -155,8 +175,8 @@ struct
     char *name;
     Type type;
 } functions_tokens[] = {
-    {"output(", output_},
-    {"input(", input_},
+    {"output", output_},
+    {"input", input_},
     {0, 0},
 };
 
@@ -201,6 +221,7 @@ int ft_strlen(char *str)
         i++;
     return i;
 }
+
 void ft_strcpy(char *dest, char *src)
 {
     if (dest == NULL || src == NULL)
@@ -208,18 +229,6 @@ void ft_strcpy(char *dest, char *src)
     int len = ft_strlen(dest);
     int i = 0;
     while (src[i])
-    {
-        dest[len + i] = src[i];
-        i++;
-    }
-}
-void ft_strncpy(char *dest, char *src, int size)
-{
-    if (dest == NULL || src == NULL)
-        ft_printf(err, "receive NULL in strncpy\n");
-    int len = ft_strlen(dest);
-    int i = 0;
-    while (src[i] && i < size)
     {
         dest[len + i] = src[i];
         i++;
@@ -236,6 +245,20 @@ int ft_strncmp(char *s1, char *s2, size_t n)
         return (0);
     return ((unsigned char)s1[i] - (unsigned char)s2[i]);
 }
+
+void ft_strncpy(char *dest, char *src, int size)
+{
+    if (dest == NULL || src == NULL)
+        ft_printf(STDERR_FILENO, "receive NULL in strncpy\n");
+    int len = ft_strlen(dest);
+    int i = 0;
+    while (src[i] && i < size)
+    {
+        dest[len + i] = src[i];
+        i++;
+    }
+}
+
 int ft_strcmp(char *s1, char *s2)
 {
     size_t i;
@@ -440,10 +463,13 @@ void ft_printf(int fd, char *fmt, ...)
                     case rbracket_:
                     case lcbracket_:
                     case rcbracket_:
+                    case lparent_:
+                    case rparent_:
                     case comma_:
                     case mul_:
                     case length_:
                     case dot_:
+                    case output_:
                         break;
                     default:
                         ft_putstr(err, "ft_printf didn't know this token type: ");
@@ -486,6 +512,83 @@ void ft_printf(int fd, char *fmt, ...)
     va_end(ap);
     if (fd == err)
         exit(1);
+}
+
+// built in functions
+void output(Token *token)
+{
+    int fd = 0;
+    if (token)
+    {
+        switch (token->type)
+        {
+        case identifier_:
+            ft_printf(err, "Undeclared variable '%s'\n", token->name);
+        case characters_:
+        case character_:
+        {
+            char *string = token->characters;
+            int i = 0;
+            while (string[i])
+            {
+                for (int j = 0; special_characters[j].special; j++)
+                {
+                    if (ft_strncmp(&string[i], special_characters[j].special, ft_strlen(special_characters[j].special)) == 0)
+                    {
+                        ft_putchar(fd, special_characters[j].replace);
+                        i += ft_strlen(special_characters[j].special);
+                        break;
+                    }
+                }
+                ft_putchar(fd, string[i]);
+                if (string[i] == '\0')
+                    break;
+                i++;
+            }
+        }
+        break;
+        case integer_:
+            ft_putfloat(fd, token->number, 0);
+            break;
+        case float_:
+            ft_putfloat(fd, token->number, 6);
+            break;
+        case boolean_:
+            if (token->boolean)
+                ft_putstr(fd, "true");
+            else
+                ft_putstr(fd, "false");
+            break;
+        case array_:
+            ft_putstr(fd, "[ ");
+            for (int i = 0; i < token->array_len; i++)
+            {
+                output(token->array[i]);
+                if (i < token->array_len - 1)
+                    ft_putstr(fd, ", ");
+            }
+            ft_putstr(fd, " ]");
+            break;
+        case obj_:
+            ft_putstr(fd, "{\n");
+            for (int i = 0; i < token->object_len; i++)
+            {
+                ft_putstr(fd,"    ");
+                ft_putstr(fd, token->object[i]->name);
+                ft_putstr(fd, ": ");
+                output(token->object[i]);
+                if (i < token->object_len - 1)
+                    ft_putstr(fd, ",\n");
+            }
+            ft_putstr(fd, "\n}");
+            break;
+        default:
+            ft_putstr(err, "Error in ouput\n");
+            exit(1);
+        }
+    }
+    else
+        ft_putstr(fd, "NULL");
 }
 
 // debuging functions
@@ -728,6 +831,21 @@ Token *build_tokens()
             new_token(type);
             continue;
         }
+        type = 0;
+        for (int i = 0; functions_tokens[i].type; i++)
+        {
+            if (ft_strncmp(functions_tokens[i].name, text + txt_pos, ft_strlen(functions_tokens[i].name)) == 0)
+            {
+                type = functions_tokens[i].type;
+                txt_pos += ft_strlen(functions_tokens[i].name);
+                break;
+            }
+        }
+        if (type)
+        {
+            new_token(type);
+            continue;
+        }
         int isboolean = ft_strcmp(text + txt_pos, "true");
         if (isboolean == 0 || isboolean == ' ' || isboolean == '\n')
         {
@@ -888,7 +1006,7 @@ Node *mul_div()
         skip(tokens[tk_pos]->type);
         node->left = left;
         node->right = unary();
-        return node;
+        left = node;
     }
     return left;
 }
@@ -915,23 +1033,25 @@ Node *unary()
 Node *attribute()
 {
     Node *left = iteration();
+    // for object
+    while (tokens[tk_pos]->type == dot_)
+    {
+        Node *node = new_node(tokens[tk_pos]);
+        skip(tokens[tk_pos]->type);
+        node->left = left;
+        node->right = iteration();
+        if (node->right->token->type != identifier_ && node->right->token->type != length_)
+            ft_printf(err, "Expected identifier got '%t'", node->right->token->type);
+        left = node;
+        // return node;
+    }
     if (tokens[tk_pos]->type == length_)
     {
         Node *node = new_node(tokens[tk_pos]);
         skip(tokens[tk_pos]->type);
         node->left = left;
+        node->right = NULL;
         // node->right = prime();
-        return node;
-    }
-    // for object
-    if (tokens[tk_pos]->type == dot_)
-    {
-        Node *node = new_node(tokens[tk_pos]);
-        skip(tokens[tk_pos]->type);
-        node->left = left;
-        node->right = attribute();
-        if (node->right->token->type != identifier_)
-            ft_printf(err, "Expected identifier");
         return node;
     }
     return left;
@@ -992,7 +1112,7 @@ Node *prime()
         skip(rbracket_);
         left->token->array_len = len;
         left->token->array_head = list;
-        ft_printf(out, "len is %d\n", len);
+        // ft_printf(out, "len is %d\n", len);
         return left;
     }
     else if (tokens[tk_pos]->type == lcbracket_)
@@ -1025,12 +1145,38 @@ Node *prime()
                 len++;
                 list = realloc(list, (len + 1) * sizeof(Node *));
             }
-            skip(rcbracket_);
-            left->token->object_len = len;
-            left->token->object_head = list;
-            // ft_printf(out, "len is %d\n", len);
-            return left;
         }
+        skip(rcbracket_);
+        left->token->object_len = len;
+        left->token->object_head = list;
+        // ft_printf(out, "len is %d\n", len);
+        return left;
+    }
+    else if (tokens[tk_pos]->type == output_)
+    {
+        left = new_node(tokens[tk_pos]);
+        skip(output_);
+        skip(lparent_);
+        int len = 0;
+        Node **list = calloc(len + 1, sizeof(Node *));
+        if (tokens[tk_pos]->type != rparent_) // enter if array is not empty
+        {
+            list[len] = equality();
+            len++;
+            list = realloc(list, (len + 1) * sizeof(Node *));
+            while (tokens[tk_pos]->type != rparent_ && tokens[tk_pos]->type != eof_)
+            {
+                skip(comma_);
+                list[len] = equality();
+                len++;
+                list = realloc(list, (len + 1) * sizeof(Node *));
+            }
+        }
+        skip(rparent_);
+        left->token->params_head = list;
+        left->token->params_len = len;
+        // ft_printf(out, "len is %d\n", len);
+        return left;
     }
     return left;
 }
@@ -1056,7 +1202,7 @@ Value *eval(Node *node)
 {
     if (node == NULL)
         return NULL;
-    ft_printf(out, "eval received %t\n", node->token->type);
+    // ft_printf(out, "eval received %t\n", node->token->type);
     switch (node->token->type)
     {
     // assignement
@@ -1174,7 +1320,7 @@ Value *eval(Node *node)
     case character_:
     case boolean_:
     {
-        ft_printf(out, "return %k\n", node->token);
+        // ft_printf(out, "return %k\n", node->token);
         return (node->token);
     }
     case iteration_:
@@ -1234,6 +1380,26 @@ Value *eval(Node *node)
         // ft_printf(out, "array -> %k\n", node->token);
         return (node->token);
     }
+    case output_:
+    {
+        // exit(0);
+        Node **head = node->token->params_head;
+        // node->token->array = calloc(node->token->params_len + 1, sizeof(Node *));
+        int i = 0;
+        // ft_printf(out, "execute output, it has %d params\n", node->token->params_len);
+        while (i < node->token->params_len)
+        {
+            // ft_printf(out, "%v ", eval(head[i]));
+            output(eval(head[i]));
+            ft_putstr(out, " ");
+            // exit(0);
+            i++;
+        }
+        ft_printf(out, "\n");
+        // exit(0);
+        // ft_printf(out, "array -> %k\n", node->token);
+        return (node->token);
+    }
     // operator
     case add_:
     case sub_:
@@ -1272,7 +1438,7 @@ Value *eval(Node *node)
             node->token->characters = calloc(ft_strlen(left->characters) + ft_strlen(right->characters) + 1, sizeof(char));
             ft_strcpy(node->token->characters, left->characters);
             ft_strcpy(node->token->characters + ft_strlen(node->token->characters), right->characters);
-            ft_printf(out, "result: %k\n", node->token);
+            // ft_printf(out, "result: %k\n", node->token);
         }
         else
         {
@@ -1341,13 +1507,14 @@ Value *eval(Node *node)
     }
     case length_:
     {
+        // ft_printf(out, "enter length\n");
         Value *left = eval(node->left);
         node->token->type = integer_;
         if (left->type == character_ || left->type == characters_)
         {
-            ft_printf(out, "calculate len of %v\n", left);
+            // ft_printf(out, "calculate len of %v\n", left);
             node->token->number = (double)ft_strlen(left->characters);
-            ft_printf(out, "len is %f\n", node->token->number);
+            // ft_printf(out, "len is %f\n", node->token->number);
             return node->token;
         }
         else if (left->type == array_)
@@ -1356,16 +1523,21 @@ Value *eval(Node *node)
             return node->token;
         }
         else
-            ft_printf(err, "data type '%t' has no atribute '%t'\n", left->type, length_);
+            ft_printf(err, "data type '%t' has no attribute '%t'\n", left->type, length_);
         // exit(0);
     }
     case dot_:
     {
-        ft_printf(out, "enter dot\n");
+        // ft_printf(out, "enter dot\n");
         Value *left = eval(node->left);
         char *name = node->right->token->name;
-        // check taht left is obj, if you check that right is idenitifier taht may cause error
+        if (left->type == identifier_)
+        {
+            ft_printf(err, "Undeclared variable '%s'\n", left->name);
+        }
+        // check that left is obj, if you check that right is idenitifier taht may cause error
         // in case there is a variable with same name as this attribute
+        ft_printf(out, "search for %s\n", name);
         if (left->type == obj_)
         {
             int i = 0;
@@ -1373,12 +1545,21 @@ Value *eval(Node *node)
             {
                 if (strcmp(left->object[i]->name, name) == 0)
                 {
+                    // ft_printf(out, "\nreturn %v\n", left->object[i]);
                     return left->object[i];
                 }
                 i++;
             }
         }
-        ft_printf(err, "Error in dot\n");
+        if (left->type == obj_)
+        {
+            if (left->name)
+                ft_printf(err, "Error: '%s' has no attribute '%s'\n", left->name, name);
+            else
+                ft_printf(err, "Error: OBJ has no attribute '%s'\n", name);
+        }
+        else
+            ft_printf(err, "Error: %t has no attribute '%s'\n", left->type, name);
     }
     default:
         ft_printf(err, "receive unkonwn type '%t' \n", node->token->type);

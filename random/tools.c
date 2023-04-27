@@ -289,7 +289,6 @@ void ft_printf(int fd, char *fmt, ...)
                 var *variable = va_arg(ap, var *);
                 if (variable)
                 {
-
                     ft_putstr(fd, "name: ");
                     ft_putstr(fd, variable->name);
                     ft_putstr(fd, ", type: ");
