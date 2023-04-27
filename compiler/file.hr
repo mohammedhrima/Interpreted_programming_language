@@ -1,6 +1,16 @@
 x = 0
-if 10 == 10:
-    x = 5
-else:
-    x = 2
-end
+
+if x == 0: x = 2
+    if x == 1:
+        x = 11
+        if x == 11:
+            x = 33
+    if x == 2:
+        x = 10
+        if x == 10:
+            x = 44
+            if x == 44:
+                x = 5
+
+output("this is x: " ,x)
+

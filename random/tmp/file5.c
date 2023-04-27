@@ -81,7 +81,6 @@ struct Token
     char *name;
     Type type;
     int index;
-    int level;
     union
     {
         long double number; // type integer, float
@@ -104,16 +103,9 @@ struct Token
         // output_
         struct
         {
+            // Token **params;
             int params_len;
             Node **params_head;
-        };
-        // statement
-        struct
-        {
-            int conditions_len;
-            Node **conditions_head;
-            int block_len;
-            Node **block_head;
         };
     };
 };
@@ -385,167 +377,163 @@ int len_of_num(long num)
 
 void ft_printf(int fd, char *fmt, ...)
 {
-    if (DEBUG || fd == err)
+#if DEBUG
+    va_list ap;
+    line++;
+    va_start(ap, fmt);
+    int i = 0;
+    while (fmt && fmt[i])
     {
-        va_list ap;
-        line++;
-        va_start(ap, fmt);
-        int i = 0;
-        while (fmt && fmt[i])
+        if (fmt[i] == '%')
         {
-            if (fmt[i] == '%')
-            {
-                i++;
-                int space = -1;
-                if (ft_isdigit(fmt[i]))
-                    space = 0;
-                while (ft_isdigit(fmt[i]))
-                {
-                    space = 10 * space + fmt[i] - '0';
-                    i++;
-                }
-                if (fmt[i] == 'd')
-                {
-                    if (space == 0)
-                        space = va_arg(ap, long);
-                    int num = va_arg(ap, long);
-                    if (space > 0)
-                        space -= len_of_num((long)num);
-                    print_space(fd, space, ' ');
-                    ft_putnbr(fd, (long)num);
-                }
-                if (fmt[i] == 't')
-                {
-                    Type type = va_arg(ap, Type);
-                    ft_putstr(fd, type_to_string(type));
-                }
-                if (fmt[i] == 'k' || fmt[i] == 'v')
-                {
-                    Token *token = va_arg(ap, Token *);
-                    if (token)
-                    {
-                        ft_putstr(fd, type_to_string(token->type));
-                        ft_putstr(fd, " with name: ");
-                        ft_putstr(fd, token->name);
-                        switch (token->type)
-                        {
-                        case identifier_:
-                            break;
-                        case characters_:
-                        case character_:
-                            ft_putstr(fd, " ,value: ");
-                            ft_putstr(fd, token->characters);
-                            break;
-                        case integer_:
-                            ft_putstr(fd, " ,value: ");
-                            ft_putfloat(fd, token->number, 0);
-                            break;
-                        case float_:
-                            ft_putstr(fd, " ,value: ");
-                            ft_putfloat(fd, token->number, 6);
-                            break;
-                        case boolean_:
-                            ft_putstr(fd, " ,value: ");
-                            if (token->boolean)
-                                ft_putstr(fd, "true");
-                            else
-                                ft_putstr(fd, "false");
-                            break;
-                        case array_:
-                            ft_putstr(fd, " ,value: \n");
-                            for (int i = 0; i < token->array_len; i++)
-                            {
-                                ft_printf(fd, "         %k\n", token->array[i]);
-                            }
-                            ft_putstr(fd, "     with size: ");
-                            ft_putnbr(fd, token->array_len);
-                            break;
-                        case obj_:
-                            ft_putstr(fd, " ,value: \n");
-                            for (int i = 0; i < token->object_len; i++)
-                            {
-                                ft_printf(fd, "         %k\n", token->object[i]);
-                            }
-                            ft_putstr(fd, "     with size: ");
-                            ft_putnbr(fd, token->object_len);
-                            break;
-                        case assign_:
-                        case new_line_:
-                        case if_:
-                        case end_statement_:
-                        case dots_:
-                        case eof_:
-                        case equal_:
-                        case more_than_:
-                        case less_than_:
-                        case less_than_or_equal_:
-                        case more_than_or_equal_:
-                        case sub_:
-                        case add_:
-                        case lbracket_:
-                        case rbracket_:
-                        case lcbracket_:
-                        case rcbracket_:
-                        case lparent_:
-                        case rparent_:
-                        case comma_:
-                        case mul_:
-                        case length_:
-                        case dot_:
-                        case output_:
-                        case add_me:
-                        case sub_me:
-                        case mul_me:
-                        case div_me:
-                        case and_:
-                        case or_:
-                        case else_:
-                            break;
-                        default:
-                            ft_putstr(err, "ft_printf didn't know this token type: ");
-                            ft_putstr(err, type_to_string(token->type));
-                            exit(1);
-                        }
-                        ft_putstr(fd, ", in position [");
-                        ft_putnbr(fd, token->index);
-                        ft_putstr(fd, "]");
-                        ft_putstr(fd, ", in level [");
-                        ft_putnbr(fd, token->level);
-                        ft_putstr(fd, "]");
-                    }
-                    else
-                        ft_putstr(fd, "(null token)");
-                }
-                if (fmt[i] == 'f')
-                {
-                    long double num = va_arg(ap, long double);
-                    ft_putfloat(fd, num, 6);
-                }
-                if (fmt[i] == 'c')
-                {
-                    space--;
-                    int c = va_arg(ap, int);
-                    ft_putchar(fd, c);
-                }
-                if (fmt[i] == 's')
-                {
-                    if (space == 0)
-                        space = va_arg(ap, int);
-                    char *str = va_arg(ap, char *);
-                    if (space > 0)
-                        space -= ft_strlen(str);
-                    print_space(fd, space, ' ');
-                    ft_putstr(fd, str);
-                }
-            }
-            else
-                ft_putchar(fd, fmt[i]);
             i++;
+            int space = -1;
+            if (ft_isdigit(fmt[i]))
+                space = 0;
+            while (ft_isdigit(fmt[i]))
+            {
+                space = 10 * space + fmt[i] - '0';
+                i++;
+            }
+            if (fmt[i] == 'd')
+            {
+                if (space == 0)
+                    space = va_arg(ap, long);
+                int num = va_arg(ap, long);
+                if (space > 0)
+                    space -= len_of_num((long)num);
+                print_space(fd, space, ' ');
+                ft_putnbr(fd, (long)num);
+            }
+            if (fmt[i] == 't')
+            {
+                Type type = va_arg(ap, Type);
+                ft_putstr(fd, type_to_string(type));
+            }
+            if (fmt[i] == 'k' || fmt[i] == 'v')
+            {
+                Token *token = va_arg(ap, Token *);
+                if (token)
+                {
+                    ft_putstr(fd, type_to_string(token->type));
+                    ft_putstr(fd, " with name: ");
+                    ft_putstr(fd, token->name);
+                    switch (token->type)
+                    {
+                    case identifier_:
+                        break;
+                    case characters_:
+                    case character_:
+                        ft_putstr(fd, " ,value: ");
+                        ft_putstr(fd, token->characters);
+                        break;
+                    case integer_:
+                        ft_putstr(fd, " ,value: ");
+                        ft_putfloat(fd, token->number, 0);
+                        break;
+                    case float_:
+                        ft_putstr(fd, " ,value: ");
+                        ft_putfloat(fd, token->number, 6);
+                        break;
+                    case boolean_:
+                        ft_putstr(fd, " ,value: ");
+                        if (token->boolean)
+                            ft_putstr(fd, "true");
+                        else
+                            ft_putstr(fd, "false");
+                        break;
+                    case array_:
+                        ft_putstr(fd, " ,value: \n");
+                        for (int i = 0; i < token->array_len; i++)
+                        {
+                            ft_printf(fd, "         %k\n", token->array[i]);
+                        }
+                        ft_putstr(fd, "     with size: ");
+                        ft_putnbr(fd, token->array_len);
+                        break;
+                    case obj_:
+                        ft_putstr(fd, " ,value: \n");
+                        for (int i = 0; i < token->object_len; i++)
+                        {
+                            ft_printf(fd, "         %k\n", token->object[i]);
+                        }
+                        ft_putstr(fd, "     with size: ");
+                        ft_putnbr(fd, token->object_len);
+                        break;
+                    case assign_:
+                    case new_line_:
+                    case if_:
+                    case end_statement_:
+                    case dots_:
+                    case eof_:
+                    case equal_:
+                    case more_than_:
+                    case less_than_:
+                    case less_than_or_equal_:
+                    case more_than_or_equal_:
+                    case sub_:
+                    case add_:
+                    case lbracket_:
+                    case rbracket_:
+                    case lcbracket_:
+                    case rcbracket_:
+                    case lparent_:
+                    case rparent_:
+                    case comma_:
+                    case mul_:
+                    case length_:
+                    case dot_:
+                    case output_:
+                    case add_me:
+                    case sub_me:
+                    case mul_me:
+                    case div_me:
+                    case and_:
+                    case or_:
+                    case else_:
+                        break;
+                    default:
+                        ft_putstr(err, "ft_printf didn't know this token type: ");
+                        ft_putstr(err, type_to_string(token->type));
+                        exit(1);
+                    }
+                    ft_putstr(fd, ", in position [");
+                    ft_putnbr(fd, token->index);
+                    ft_putstr(fd, "]");
+                }
+                else
+                    ft_putstr(fd, "(null token)");
+            }
+            if (fmt[i] == 'f')
+            {
+                long double num = va_arg(ap, long double);
+                ft_putfloat(fd, num, 6);
+            }
+            if (fmt[i] == 'c')
+            {
+                space--;
+                int c = va_arg(ap, int);
+                ft_putchar(fd, c);
+            }
+            if (fmt[i] == 's')
+            {
+                if (space == 0)
+                    space = va_arg(ap, int);
+                char *str = va_arg(ap, char *);
+                if (space > 0)
+                    space -= ft_strlen(str);
+                print_space(fd, space, ' ');
+                ft_putstr(fd, str);
+            }
         }
-        va_end(ap);
-        if (fd == err)
-            exit(1);
+        else
+            ft_putchar(fd, fmt[i]);
+        i++;
     }
+    va_end(ap);
+#endif
+    if (fd == err)
+        exit(1);
 }
 
 // built in functions
@@ -648,7 +636,7 @@ void output(Token *token)
         }
         default:
         {
-            ft_putstr(err, "Error in output\n");
+            ft_putstr(err, "Error in ouput\n");
             exit(1);
         }
         }
@@ -660,7 +648,6 @@ void output(Token *token)
 // debuging functions
 void indexes()
 {
-
     int i = 0;
     ft_putstr(out, "\n");
     while (text && text[i])
@@ -716,7 +703,7 @@ char *type_to_string(int type)
         {"OR", or_},
         {"DOTS", dots_},
         {"END STATEMENT", end_statement_},
-        {"NEW LINE", new_line_},
+        {"NEW LINE  ", new_line_},
         {"LEFT PARENT", lparent_},
         {"RIGHT PARENT", rparent_},
         {"LEFT BRACKET", lbracket_},
@@ -751,12 +738,11 @@ char *type_to_string(int type)
     return NULL;
 }
 
-Token *new_token(Type type, int level)
+Token *new_token(Type type)
 {
     Token *new = calloc(1, sizeof(Token));
     new->type = type;
     new->index = tk_pos;
-    new->level = level;
     switch (type)
     {
     case identifier_:
@@ -847,12 +833,11 @@ Token *new_token(Type type, int level)
     return new;
 }
 
-char *tab_space = "    ";
 // Tokenize
-Token *build_tokens(int curr_level)
+Token *build_tokens()
 {
     Token *token;
-    // int curr_level = 0;
+    int curr_level = 0;
     while (text[txt_pos])
     {
         if (text[txt_pos] == '\0')
@@ -861,12 +846,6 @@ Token *build_tokens(int curr_level)
         {
             curr_level = 0;
             txt_pos++;
-            continue;
-        }
-        if (ft_strncmp(text + txt_pos, tab_space, ft_strlen(tab_space)) == 0)
-        {
-            curr_level++;
-            text += ft_strlen(tab_space);
             continue;
         }
         if (text[txt_pos] == ' ')
@@ -886,9 +865,7 @@ Token *build_tokens(int curr_level)
         }
         if (type)
         {
-            new_token(type, curr_level);
-            if (type == dots_)
-                curr_level++;
+            new_token(type);
             continue;
         }
         type = 0;
@@ -903,7 +880,7 @@ Token *build_tokens(int curr_level)
         }
         if (type)
         {
-            new_token(type, curr_level);
+            new_token(type);
             continue;
         }
         type = 0;
@@ -918,7 +895,7 @@ Token *build_tokens(int curr_level)
         }
         if (type)
         {
-            new_token(type, curr_level);
+            new_token(type);
             continue;
         }
         type = 0;
@@ -933,13 +910,13 @@ Token *build_tokens(int curr_level)
         }
         if (type)
         {
-            new_token(type, curr_level);
+            new_token(type);
             continue;
         }
         int isboolean = ft_strcmp(text + txt_pos, "true");
         if (isboolean == 0 || isboolean == ' ' || isboolean == '\n')
         {
-            token = new_token(boolean_, curr_level);
+            token = new_token(boolean_);
             token->boolean = true;
             txt_pos += ft_strlen("true");
             continue;
@@ -947,7 +924,7 @@ Token *build_tokens(int curr_level)
         isboolean = ft_strcmp(text + txt_pos, "false");
         if (isboolean == 0 || isboolean == ' ' || isboolean == '\n')
         {
-            token = new_token(boolean_, curr_level);
+            token = new_token(boolean_);
             token->boolean = false;
             txt_pos += ft_strlen("false");
             continue;
@@ -957,7 +934,7 @@ Token *build_tokens(int curr_level)
             start = txt_pos;
             while (ft_isalnum(text[txt_pos]))
                 txt_pos++;
-            new_token(identifier_, curr_level);
+            new_token(identifier_);
             continue;
         }
         if (ft_isdigit(text[txt_pos]))
@@ -974,7 +951,7 @@ Token *build_tokens(int curr_level)
             }
             while (ft_isdigit(text[txt_pos]))
                 txt_pos++;
-            new_token(tmp_type, curr_level);
+            new_token(tmp_type);
             continue;
         }
         if (text[txt_pos] == '"' || text[txt_pos] == '\'')
@@ -986,13 +963,13 @@ Token *build_tokens(int curr_level)
             if (text[txt_pos] != text[start])
                 ft_printf(err, "expected '%c'\n", text[start]);
             start++;
-            new_token(characters_, curr_level);
+            new_token(characters_);
             txt_pos++;
             continue;
         }
         ft_printf(err, "Unknown value s:'%s', c:'%c', d:'%d' \n", text + txt_pos, text[txt_pos], text[txt_pos]);
     }
-    return (new_token(eof_, curr_level));
+    return (new_token(eof_));
     // return NULL;
 }
 
@@ -1060,46 +1037,9 @@ Node *assign()
 
 Node *tenary()
 {
+    // ft_printf(out, "Enter tenary\n");
     if (tokens[tk_pos]->type == if_)
     {
-#if 1
-        Node *node = new_node(tokens[tk_pos]);
-        int if_level = tokens[tk_pos]->level;
-        skip(tokens[tk_pos]->type);
-        if (tokens[tk_pos]->type == dots_)
-            ft_printf(err, "Expected expression before ':'\n");
-        // get conditions
-        int len = 0;
-        Node **list = calloc(len + 1, sizeof(Node *));
-        list[len] = logic_or(); // to be verified after
-        len++;
-        list = realloc(list, (len + 1) * sizeof(Node *));
-        while (tokens[tk_pos]->type != dots_ && tokens[tk_pos]->type != eof_)
-        {
-            list[len] = logic_or();
-            len++;
-            list = realloc(list, (len + 1) * sizeof(Node *));
-        }
-        skip(dots_);
-        node->token->conditions_head = list;
-        node->token->conditions_len = len;
-        // get block
-        len = 0;
-        list = calloc(len + 1, sizeof(Node *));
-        list[len] = expr();
-        len++;
-        list = realloc(list, (len + 1) * sizeof(Node *));
-        while (tokens[tk_pos]->level == if_level + 1 && tokens[tk_pos]->type != eof_)
-        {
-            list[len] = expr();
-            len++;
-            list = realloc(list, (len + 1) * sizeof(Node *));
-        }
-        // skip(end_statement_);
-        node->token->block_head = list;
-        node->token->block_len = len;
-        return node;
-#else
         Node *node = new_node(tokens[tk_pos]);
         skip(tokens[tk_pos]->type);
         node->left = expr();
@@ -1117,7 +1057,6 @@ Node *tenary()
         }
         skip(end_statement_);
         return (node);
-#endif
     }
     return logic_or();
 }
@@ -1529,7 +1468,7 @@ Value *eval(Node *node)
         if (left->type == identifier_)
             ft_printf(err, "Undeclared variabale '%s'\n", left->name);
         if (left->type != array_ && left->type != characters_)
-            ft_printf(err, "can't iterate over type: %t\n", left->type);
+            ft_printf(err, "can't iterate over type; %t\n", left->type);
         if (right->type != integer_)
             ft_printf(err, "expected integer to iterate with it\n");
         // iterate
@@ -1582,16 +1521,20 @@ Value *eval(Node *node)
     }
     case output_:
     {
+        // exit(0);
         Node **head = node->token->params_head;
         // node->token->array = calloc(node->token->params_len + 1, sizeof(Node *));
         int i = 0;
         // ft_printf(out, "execute output, it has %d params\n", node->token->params_len);
         while (i < node->token->params_len)
         {
+            // ft_printf(out, "%v ", eval(head[i]));
             output(eval(head[i]));
+            ft_putstr(out, " ");
+            // exit(0);
             i++;
         }
-        // ft_printf(out, "\n");
+        ft_printf(out, "\n");
         // exit(0);
         // ft_printf(out, "array -> %k\n", node->token);
         return (node->token);
@@ -1850,30 +1793,6 @@ Value *eval(Node *node)
     case if_:
     {
         ft_printf(out, "enter if\n");
-#if 1
-        Node **head = node->token->conditions_head;
-        int i = 0;
-        while (i < node->token->conditions_len)
-        {
-            Value *res = eval(head[i]);
-            if (res->type == boolean_ && res->boolean == false)
-            {
-                ft_printf(out, "condition is false \n");
-                return res;
-            }
-            i++;
-        }
-        // block
-        head = node->token->block_head;
-        i = 0;
-        while (i < node->token->block_len)
-        {
-            eval(head[i]);
-            i++;
-        }
-        return (node->token);
-
-#else
         Value *left = eval(node->left);
         // Value *right = eval(node->right);
         if (left->type != boolean_)
@@ -1881,12 +1800,11 @@ Value *eval(Node *node)
         node->token = left;
         if (left->boolean == true)
         {
-            eval(node->right);
+           eval(node->right);
         }
         return node->token;
         // break;
         // exit(0);
-#endif
     }
     case else_:
     {
@@ -1930,15 +1848,11 @@ int main(void)
     fclose(fp);
 
     // start compilling
-    if (DEBUG)
-    {
-        ft_printf(out, "%s\n", text);
-        indexes();
-    }
-    build_tokens(0);
+    ft_printf(out, "%s\n", text);
+    indexes();
+    build_tokens();
     tmp_pos = tk_pos;
     tk_pos = 0;
     execute();
-    if (DEBUG)
-        visualize_variables();
+    visualize_variables();
 }

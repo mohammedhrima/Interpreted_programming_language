@@ -1,1 +1,6 @@
-students = ["moh", "am", "med", "zi", "yad", "fgog", "jjw", "iwj"]
+x = 10
+
+if x == 10:
+    print("hi")
+else:
+    printf("by")
