@@ -44,7 +44,9 @@ typedef enum
     more_than_or_equal_,
     less_than_or_equal_,
     function_,
+    condition_,
     if_,
+    else_,
     while_,
     and_,
     or_,
@@ -113,10 +115,10 @@ struct
     Type type;
 } statements_tokens[] = {
     {"if ", if_},
+    {"else", else_},
     {"while ", while_},
-
     {"func ", function_},
-    {"end ", end_statement_},
+    {"end", end_statement_},
     {0, 0},
 };
 
@@ -129,7 +131,9 @@ struct
     {"||", or_},
     {"and ", and_},
     {"or ", or_},
+    {"is", equal_},
     {"==", equal_},
+    {"is not", not_equal_},
     {"!=", not_equal_},
     {"+=", add_me},
     {"-=", sub_me},
@@ -484,6 +488,7 @@ void ft_printf(int fd, char *fmt, ...)
                     case div_me:
                     case and_:
                     case or_:
+                    case else_:
                         break;
                     default:
                         ft_putstr(err, "ft_printf didn't know this token type: ");
@@ -689,6 +694,7 @@ char *type_to_string(int type)
         {"LESS THAN OR EQUAL", less_than_or_equal_},
         {"FUNCTION", function_},
         {"IF", if_},
+        {"ELSE", else_},
         {"WHILE LOOP", while_},
         {"AND", and_},
         {"OR", or_},
@@ -796,6 +802,7 @@ Token *new_token(Type type)
     case lcbracket_:
     case output_:
     case if_:
+    case else_:
     case comma_:
     case end_statement_:
     case dots_:
@@ -964,8 +971,9 @@ Token *build_tokens()
 }
 
 // build nodes
-Node *expr();       //
+Node *expr();       // expr
 Node *assign();     // =
+Node *tenary();     // if statement
 Node *logic_or();   // || or
 Node *logic_and();  // && and
 Node *equality();   // ==  !=
@@ -973,7 +981,7 @@ Node *comparison(); // < > <= >=
 Node *add_sub();    // + -
 Node *mul_div();    // * /
 Node *unary();      // sign + -
-Node *iteration();  // value[]
+Node *iteration();  // iterate with index
 Node *attribute();  // .len ...
 Node *prime();      // final value
 
@@ -1000,13 +1008,13 @@ Node *expr()
 Node *assign()
 {
     // ft_printf(out, "call assign %t\n", tokens[tk_pos]->type);
-    Node *left = logic_or();
+    Node *left = tenary();
     if (tokens[tk_pos]->type == assign_)
     {
         Node *node = new_node(tokens[tk_pos]);
         skip(tokens[tk_pos]->type);
         node->left = left;
-        node->right = logic_or();
+        node->right = tenary();
         left = node;
     }
     else if (
@@ -1018,16 +1026,42 @@ Node *assign()
         Node *node = new_node(tokens[tk_pos]);
         skip(tokens[tk_pos]->type);
         node->left = left;
-        node->right = logic_or();
+        node->right = tenary();
         left = node;
     }
     return left;
 }
 
+Node *tenary()
+{
+    // ft_printf(out, "Enter tenary\n");
+    if (tokens[tk_pos]->type == if_)
+    {
+        Node *node = new_node(tokens[tk_pos]);
+        skip(tokens[tk_pos]->type);
+        node->left = expr();
+        skip(dots_);
+        node->right = expr();
+        // add else here
+        if (tokens[tk_pos]->type == else_)
+        {
+            Node *node1 = new_node(tokens[tk_pos]);
+            skip(tokens[tk_pos]->type);
+            skip(dots_);
+            node1->left = node;
+            node1->right = expr();
+            node = node1;
+        }
+        skip(end_statement_);
+        return (node);
+    }
+    return logic_or();
+}
+
 Node *logic_or()
 {
     Node *left = logic_and();
-    if (tokens[tk_pos]->type == and_)
+    if (tokens[tk_pos]->type == or_)
     {
         Node *node = new_node(tokens[tk_pos]);
         node->left = left;
@@ -1041,7 +1075,7 @@ Node *logic_or()
 Node *logic_and()
 {
     Node *left = equality();
-    if (tokens[tk_pos]->type == or_)
+    if (tokens[tk_pos]->type == and_)
     {
         Node *node = new_node(tokens[tk_pos]);
         node->left = left;
@@ -1182,7 +1216,9 @@ Node *prime()
         tokens[tk_pos]->type == characters_ ||
         tokens[tk_pos]->type == boolean_ ||
         tokens[tk_pos]->type == identifier_ ||
-        tokens[tk_pos]->type == end_statement_)
+        tokens[tk_pos]->type == end_statement_
+        // || tokens[tk_pos]->type == dots_
+    )
     {
         left = new_node(tokens[tk_pos]);
         skip(tokens[tk_pos]->type);
@@ -1450,6 +1486,7 @@ Value *eval(Node *node)
         else
             ft_printf(err, "Error in iteration\n");
         // exit(0);
+        break;
     }
     // method 2
     case array_:
@@ -1609,7 +1646,7 @@ Value *eval(Node *node)
             ft_printf(err, "Error 1: in eval in '%t'\n       left: '%v'\n       right: '%v'\n", node->token->type, left, right);
         }
         // left = node->token;
-        return NULL;
+        break;
     }
     case equal_:
     case not_equal_:
@@ -1668,6 +1705,7 @@ Value *eval(Node *node)
         {
             ft_printf(err, "Error 1: in eval in '%t'\n       left: '%v'\n       right: '%v'\n", node->token->type, left, right);
         }
+        break;
     }
     case length_:
     {
@@ -1688,7 +1726,7 @@ Value *eval(Node *node)
         }
         else
             ft_printf(err, "data type '%t' has no attribute '%t'\n", left->type, length_);
-        // exit(0);
+        break;
     }
     case dot_:
     {
@@ -1724,6 +1762,58 @@ Value *eval(Node *node)
         }
         else
             ft_printf(err, "Error: %t has no attribute '%s'\n", left->type, name);
+        break;
+    }
+    case and_:
+    case or_:
+    {
+        Value *left = eval(node->left);
+        Value *right = eval(node->right);
+        if (left->type != boolean_ || right->type != boolean_)
+            ft_printf(err, "in %t operation, expected boolean values\n", node->token->type);
+
+        switch (node->token->type)
+        {
+        case and_:
+            node->token->boolean = left->boolean && right->boolean;
+            break;
+        case or_:
+            node->token->boolean = left->boolean || right->boolean;
+            break;
+        default:
+            ft_printf(err, "Error ...\n");
+            break;
+        }
+        node->token->type = boolean_;
+        return (node->token);
+    }
+    case if_:
+    {
+        ft_printf(out, "enter if\n");
+        Value *left = eval(node->left);
+        // Value *right = eval(node->right);
+        if (left->type != boolean_)
+            ft_printf(err, "condition in if should be boolean value\n", node->token->type);
+        node->token = left;
+        if (left->boolean == true)
+        {
+            eval(node->right);
+        }
+        return node->token;
+        // break;
+        // exit(0);
+    }
+    case else_:
+    {
+        Value *left = eval(node->left);
+        if (left->type != boolean_)
+            ft_printf(err, "condition in else should be boolean value\n", node->token->type);
+        node->token = left;
+        if (left->boolean == false)
+        {
+            eval(node->right);
+        }
+        return node->token;
     }
     default:
         ft_printf(err, "receive unkonwn type '%t' \n", node->token->type);
