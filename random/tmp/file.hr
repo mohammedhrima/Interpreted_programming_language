@@ -1,5 +1,5 @@
-a = 1
-if 1 == 1:
-    a = 2
-if a == 2:
-    a = 3
+x = {
+    stname: "moha",
+    ndname:"hrima"
+}
+output(x.stname)

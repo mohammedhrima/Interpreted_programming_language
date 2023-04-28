@@ -1949,7 +1949,7 @@ Value *eval(Node *node)
     }
     case while_:
     {
-        Node **head;
+        Node *head;
         int condition = true;
         int i = 0;
         int j = 0;
@@ -1963,7 +1963,7 @@ Value *eval(Node *node)
             {
                 // usleep(200000);
                 // ft_printf(out, "Enter while loop 2\n");
-                Value *res = eval(head[i]);
+                Value *res = eval(head);
                 // verify thta it should be boolean value
                 if (res->type == boolean_ && res->boolean == false)
                 {
@@ -1982,7 +1982,7 @@ Value *eval(Node *node)
             {
                 // usleep(200000);
                 // ft_printf(out, "Enter while loop 3\n");
-                eval(head[j]);
+                eval(head);
                 j++;
             }
         }

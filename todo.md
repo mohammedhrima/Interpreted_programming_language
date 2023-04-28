@@ -1,6 +1,3 @@
-before starting do some researches for each step if there is extra things
-check crafting interpreter steps
-
 0- handle errors for each step
 1- save data types, and assignment
 2- add operator for all data types
@@ -13,9 +10,11 @@ check crafting interpreter steps
 9- while loop:
 
 10- functins declaration, params, return
-11- add attributes for all data types
-12- when you get here, plan for next steps
-13- improve error handling
+
+11- pass, break, continue keyword
+12- add attributes for all data types
+13- when you get here, plan for next steps
+14- improve error handling
 
 functions(parm1, param2) ...
 functions returns

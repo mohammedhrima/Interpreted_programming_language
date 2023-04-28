@@ -12,7 +12,7 @@
 #define in STDIN_FILENO
 #define out STDOUT_FILENO
 #define err STDERR_FILENO
-#define DEBUG false
+#define DEBUG true
 
 // typedefs
 typedef struct Node Node;
@@ -41,7 +41,6 @@ typedef enum
     less_than_,
     more_than_or_equal_,
     less_than_or_equal_,
-    function_,
     if_,
     elif_,
     else_,
@@ -69,6 +68,8 @@ typedef enum
     iteration_,
     dot_,
     length_,
+    func_dec,
+    func_call,
 } Type;
 
 struct Token
@@ -114,7 +115,7 @@ struct Token
         // statements
         struct
         {
-            Node **conditions_head;
+            Node *conditions_head;
             int conditions_len;
             Node **block_head;
             int block_len;
@@ -201,7 +202,7 @@ struct
     char *name;
     Type type;
 } functions_tokens[] = {
-    {"func ", function_},
+    {"func ", func_dec},
     {"output", output_},
     {"input", input_},
     {0, 0},
@@ -576,11 +577,17 @@ void output(Token *token)
                             i += ft_strlen(special_characters[j].special);
                             break;
                         }
+                        else
+                        {
+                            ft_putchar(fd, string[i]);
+                            i++;
+                            break;
+                        }
                     }
                     if (string[i] == '\0')
                         break;
-                    ft_putchar(fd, string[i]);
-                    i++;
+                    // ft_putchar(fd, string[i]);
+                    // i++;
                 }
             }
             break;
@@ -691,7 +698,8 @@ char *type_to_string(int type)
         {"LESS THAN", less_than_},
         {"MORE THAN OR EQUAL", more_than_or_equal_},
         {"LESS THAN OR EQUAL", less_than_or_equal_},
-        {"FUNCTION", function_},
+        {"FUNCTION DECLARATION", func_dec},
+        {"FUNCTION CALL", func_call},
         {"IF", if_},
         {"ELIF", elif_},
         {"ELSE", else_},
@@ -962,6 +970,7 @@ Node *add_sub();    // + -
 Node *mul_div();    // * /
 Node *unary();      // sign + -
 Node *iteration();  // iterate with index
+Node *function();   // functions
 Node *attribute();  // .len ...
 Node *prime();      // final value
 
@@ -1015,36 +1024,23 @@ Node *tenary()
 {
     if (tokens[tk_pos]->type == while_)
     {
-
         Node *node = new_node(tokens[tk_pos]);
-        int if_level = tokens[tk_pos]->level;
+        int while_level = tokens[tk_pos]->level;
         skip(tokens[tk_pos]->type);
         if (tokens[tk_pos]->type == dots_)
             ft_printf(err, "Expected expression before ':'\n");
-        int len = 0;
-        Node **list = calloc(len + 1, sizeof(Node *));
-        list[len] = logic_or(); // to be verified after
-        len++;
-        list = realloc(list, (len + 1) * sizeof(Node *));
-        while (tokens[tk_pos]->type != dots_ && tokens[tk_pos]->type != eof_)
-        {
-            list[len] = logic_or();
-            len++;
-            list = realloc(list, (len + 1) * sizeof(Node *));
-        }
+        node->token->conditions_head = expr(); // to be verified after
         skip(dots_);
         // expect tab
-        if (tokens[tk_pos + 1]->level <= if_level)
-            ft_printf(err, "expected %d tab(s) in line %d\n", if_level + 1, tokens[tk_pos + 1]->line);
-        node->token->conditions_head = list;
-        node->token->conditions_len = len;
+        if (tokens[tk_pos + 1]->level <= while_level)
+            ft_printf(err, "expected %d tab(s) in line %d\n", while_level + 1, tokens[tk_pos + 1]->line);
         // get block
-        len = 0;
-        list = calloc(len + 1, sizeof(Node *));
+        int len = 0;
+        Node **list = calloc((len + 1), sizeof(Node *));
         list[len] = expr();
         len++;
         list = realloc(list, (len + 1) * sizeof(Node *));
-        while (tokens[tk_pos]->level == if_level + 1 && tokens[tk_pos]->type != eof_)
+        while (tokens[tk_pos]->level == while_level + 1 && tokens[tk_pos]->type != eof_)
         {
             list[len] = expr();
             len++;
@@ -1052,6 +1048,7 @@ Node *tenary()
         }
         node->token->block_head = list;
         node->token->block_len = len;
+        // ft_printf(out, "block len : %d\n", len);
         return node;
     }
     else if (tokens[tk_pos]->type == if_ || tokens[tk_pos]->type == elif_)
@@ -1061,27 +1058,14 @@ Node *tenary()
         skip(tokens[tk_pos]->type);
         if (tokens[tk_pos]->type == dots_)
             ft_printf(err, "Expected expression before ':'\n");
-        // get conditions
-        int len = 0;
-        Node **list = calloc(len + 1, sizeof(Node *));
-        list[len] = logic_or(); // to be verified after
-        len++;
-        list = realloc(list, (len + 1) * sizeof(Node *));
-        while (tokens[tk_pos]->type != dots_ && tokens[tk_pos]->type != eof_)
-        {
-            list[len] = logic_or();
-            len++;
-            list = realloc(list, (len + 1) * sizeof(Node *));
-        }
+        node->token->conditions_head = expr(); // to be verified after
         skip(dots_);
         // expect tab
         if (tokens[tk_pos + 1]->level <= if_level)
             ft_printf(err, "expected %d tab(s) in line %d\n", if_level + 1, tokens[tk_pos + 1]->line);
-        node->token->conditions_head = list;
-        node->token->conditions_len = len;
         // get block
-        len = 0;
-        list = calloc(len + 1, sizeof(Node *));
+        int len = 0;
+        Node **list = calloc((len + 1), sizeof(Node *));
         list[len] = expr();
         len++;
         list = realloc(list, (len + 1) * sizeof(Node *));
@@ -1106,7 +1090,6 @@ Node *tenary()
             int else_level = tokens[tk_pos]->level;
             skip(tokens[tk_pos]->type);
             skip(dots_);
-            // expect tab
             if (tokens[tk_pos + 1]->level <= else_level)
                 ft_printf(err, "expected %d tab(s) in line %d\n", else_level + 1, tokens[tk_pos + 1]->line);
             // get block
@@ -1260,21 +1243,78 @@ Node *attribute()
 
 Node *iteration()
 {
-    Node *left = prime();
-    // ft_printf(out, "Enter iterate\n");
+    Node *left = function();
+
     if (tokens[tk_pos]->type == lbracket_)
     {
+        // call function here because prime get what between ()
         Node *node = new_node(tokens[tk_pos]);
         skip(tokens[tk_pos]->type);
         node->token->type = iteration_;
         node->left = left;
-        node->right = prime();
+        // node->right = function();
+        node->right = function();
+
+        // skip )
         skip(rbracket_);
         // ft_printf(out, "return from iterate\n");
         return node;
     }
     return left;
 }
+#if 1
+Node *function()
+{
+    ft_printf(out, "Enter function\n");
+    if (tokens[tk_pos]->type == func_dec)
+    {
+        ft_printf(out, "build function\n");
+        Node *node = NULL;
+        int func_level = tokens[tk_pos]->level;
+
+        skip(func_dec);
+        node = prime(); // should save this name
+        // skip(identifier_);
+        if (node->token->type != identifier_)
+            ft_printf(err, "Error in function, Expected identifier name\n");
+        node->token->type = func_dec;
+
+        // expect (
+        skip(lparent_);
+        // get params
+        node->left = expr();
+        // expect )
+        skip(rparent_);
+
+        // expect :
+        skip(dots_);
+        int len = 0;
+        Node **list = calloc(len + 1, sizeof(Node *));
+        list[len] = expr();
+        len++;
+        list = realloc(list, (len + 1) * sizeof(Node *));
+        while (tokens[tk_pos]->level == func_level + 1 && tokens[tk_pos]->type != eof_)
+        {
+            list[len] = expr();
+            len++;
+            list = realloc(list, (len + 1) * sizeof(Node *));
+        }
+        node->right->token->params_head = list;
+        node->right->token->params_len = len;
+        return node;
+    }
+
+    // else if (left->token->type == identifier_ && tokens[tk_pos + 1]->type == lparent_)
+    // {
+    //     // check if ther is (
+    //     // means it's a function
+    //     // call prime again to get what betwen ()
+    // }
+
+    // return left;
+    return (prime());
+}
+#endif
 
 Node *prime()
 {
@@ -1283,11 +1323,40 @@ Node *prime()
         tokens[tk_pos]->type == number_ ||
         tokens[tk_pos]->type == characters_ ||
         tokens[tk_pos]->type == boolean_ ||
-        tokens[tk_pos]->type == identifier_)
+        tokens[tk_pos]->type == identifier_ ||
+        tokens[tk_pos]->type == func_dec)
     {
         left = new_node(tokens[tk_pos]);
+        // if(tokens[tk_pos])
         skip(tokens[tk_pos]->type);
     }
+#if 0
+    else if (tokens[tk_pos]->type == lparent_)
+    {
+        left = new_node(tokens[tk_pos]);
+        skip(lparent_);
+        left->token->type = array_;
+        int len = 0;
+        Node **list = calloc(len + 1, sizeof(Node *));
+        if (tokens[tk_pos]->type != rparent_) // enter if array is not empty
+        {
+            list[len] = assign();
+            len++;
+            list = realloc(list, (len + 1) * sizeof(Node *));
+            while (tokens[tk_pos]->type != rparent_ && tokens[tk_pos]->type != eof_)
+            {
+                skip(comma_);
+                list[len] = assign();
+                len++;
+                list = realloc(list, (len + 1) * sizeof(Node *));
+            }
+        }
+        skip(rparent_);
+        left->token->array_len = len;
+        left->token->array_head = list;
+        return left;
+    }
+#endif
     else if (tokens[tk_pos]->type == lbracket_)
     {
         left = new_node(tokens[tk_pos]);
@@ -1720,15 +1789,9 @@ Value *eval(Node *node)
         Value *ret = calloc(1, sizeof(Value));
         ret->type = number_;
         if (left->type == characters_)
-        {
             ret->number = (double)ft_strlen(left->characters);
-            break;
-        }
         else if (left->type == array_)
-        {
             ret->number = left->array_len;
-            break;
-        }
         else
             ft_printf(err, "data type '%t' has no attribute '%t'\n", left->type, length_);
         return ret;
@@ -1748,8 +1811,9 @@ Value *eval(Node *node)
             int i = 0;
             while (i < left->object_len)
             {
-                if (strcmp(left->object[i]->name, name) == 0)
+                if (strcmp(left->keys[i], name) == 0)
                 {
+                    ft_printf(out, "iterate return %v\n", left->object[i]);
                     return left->object[i];
                 }
                 i++;
@@ -1796,34 +1860,28 @@ Value *eval(Node *node)
     }
     case while_:
     {
-        Node **head;
+        Node *head;
+        Node **block;
         int condition = true;
-        int i = 0;
-        int j = 0;
+        head = node->token->conditions_head;
         while (1)
         {
-            i = 0;
-            head = node->token->conditions_head;
-            while (i < node->token->conditions_len)
+            Value *res = eval(head);
+            // verify thta it should be boolean value
+            if (res->type == boolean_ && res->boolean == false)
             {
-                Value *res = eval(head[i]);
-                // verify thta it should be boolean value
-                if (res->type == boolean_ && res->boolean == false)
-                {
-                    condition = false;
-                    break;
-                }
-                if (res->type != boolean_)
-                    ft_printf(err, "Expected boolean value in whie loop\n");
-                i++;
+                condition = false;
+                break;
             }
+            if (res->type != boolean_)
+                ft_printf(err, "Expected boolean value in whie loop\n");
             if (condition == false)
                 break;
-            head = node->token->block_head;
-            j = 0;
+            block = node->token->block_head;
+            int j = 0;
             while (j < node->token->block_len)
             {
-                eval(head[j]);
+                eval(block[j]);
                 j++;
             }
         }
@@ -1832,29 +1890,28 @@ Value *eval(Node *node)
     case if_:
     case elif_:
     {
-        Node **head = node->token->conditions_head;
-        int i = 0;
-        while (i < node->token->conditions_len)
+        Node *head;
+        Node **block;
+
+        head = node->token->conditions_head;
+        Value *res = eval(head);
+        // verify thta it should be boolean value
+        if (res->type == boolean_ && res->boolean == false)
         {
-            Value *res = eval(head[i]);
-            // verify thta it should be boolean value
-            if (res->type == boolean_ && res->boolean == false)
-            {
-                if (node->token->elif_tk)
-                    return (eval(node->token->elif_tk));
-                if (node->token->else_tk)
-                    return (eval(node->token->else_tk));
-                ft_printf(out, "condition is false \n");
-                return res;
-            }
-            i++;
+            if (node->token->elif_tk)
+                return (eval(node->token->elif_tk));
+            if (node->token->else_tk)
+                return (eval(node->token->else_tk));
+            ft_printf(out, "condition is false \n");
+            return res;
         }
+
         // block
-        head = node->token->block_head;
-        i = 0;
+        block = node->token->block_head;
+        int i = 0;
         while (i < node->token->block_len)
         {
-            eval(head[i]);
+            eval(block[i]);
             i++;
         }
         return (node->token); // check
