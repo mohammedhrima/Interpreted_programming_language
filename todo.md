@@ -15,7 +15,7 @@ check crafting interpreter steps
 10- functins declaration, params, return
 11- add attributes for all data types
 12- when you get here, plan for next steps
-
+13- improve error handling
 
 functions(parm1, param2) ...
 functions returns

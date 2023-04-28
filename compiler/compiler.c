@@ -12,7 +12,7 @@
 #define in STDIN_FILENO
 #define out STDOUT_FILENO
 #define err STDERR_FILENO
-#define DEBUG true
+#define DEBUG false
 
 // typedefs
 typedef struct Node Node;
@@ -100,6 +100,7 @@ struct Token
         // object
         struct
         {
+            char **keys;
             Token **object;
             Node **object_head;
             int object_len;
@@ -482,7 +483,9 @@ void ft_printf(int fd, char *fmt, ...)
                             ft_putstr(fd, "value: \n");
                             for (int i = 0; i < token->object_len; i++)
                             {
-                                ft_printf(fd, "         %k\n", token->object[i]);
+                                ft_putstr(fd, "         ");
+                                ft_putstr(fd, token->keys[i]);
+                                ft_printf(fd, ": %k\n", token->object[i]);
                             }
                             ft_putstr(fd, "     with size: ");
                             ft_putnbr(fd, token->object_len);
@@ -615,28 +618,11 @@ void output(Token *token)
         }
         case obj_:
         {
-            ft_putstr(fd, "{\n");
+            ft_putstr(fd, " {\n");
             for (int i = 0; i < token->object_len; i++)
             {
                 ft_putstr(fd, "    ");
-                char *string = token->object[i]->name;
-                int k = 0;
-                while (string[k])
-                {
-                    for (int j = 0; special_characters[j].special; j++)
-                    {
-                        if (ft_strncmp(&string[k], special_characters[j].special, ft_strlen(special_characters[j].special)) == 0)
-                        {
-                            ft_putchar(fd, special_characters[j].replace);
-                            k += ft_strlen(special_characters[j].special);
-                            break;
-                        }
-                    }
-                    if (string[k] == '\0')
-                        break;
-                    ft_putchar(fd, string[k]);
-                    k++;
-                }
+                ft_putstr(fd, token->keys[i]);
                 ft_putstr(fd, ": ");
                 output(token->object[i]);
                 if (i < token->object_len - 1)
@@ -794,7 +780,6 @@ Token *new_token(Type type)
         if (type_to_string(type) == NULL)
         {
             ft_printf(err, "verify given token '%t'\n", type);
-
             exit(1);
         }
     }
@@ -1335,30 +1320,33 @@ Node *prime()
         left->token->type = obj_;
         int len = 0;
         Node **list = calloc(len + 1, sizeof(Node *));
+        char **keys = calloc(len + 1, sizeof(char *));
         if (tokens[tk_pos]->type != rcbracket_) // enter if object is not empty
         {
             Token *identifier = tokens[tk_pos]; // expect identifier
             skip(identifier_);
-            char *name = identifier->name;
             skip(dots_); // expect dots
+            keys[len] = identifier->name;
             list[len] = add_sub();
-            list[len]->token->name = name;
+            // list[len]->token->name = name;
             len++;
             list = realloc(list, (len + 1) * sizeof(Node *));
+            keys = realloc(keys, (len + 1) * sizeof(char *));
             while (tokens[tk_pos]->type != rcbracket_ && tokens[tk_pos]->type != eof_)
             {
                 skip(comma_);
                 identifier = tokens[tk_pos]; // expect identifier
                 skip(identifier_);
-                name = identifier->name;
                 skip(dots_); // expect dots
+                keys[len] = identifier->name;
                 list[len] = add_sub();
-                list[len]->token->name = name;
                 len++;
                 list = realloc(list, (len + 1) * sizeof(Node *));
+                keys = realloc(keys, (len + 1) * sizeof(char *));
             }
         }
         skip(rcbracket_);
+        left->token->keys = keys;
         left->token->object_len = len;
         left->token->object_head = list;
         return left;
@@ -1420,37 +1408,6 @@ Value *eval(Node *node)
     // assignement
     case assign_:
     {
-#if 0
-        // to be check after
-        switch (node->right->token->type) // right is the holder
-        {
-        case identifier_:
-        case characters_:
-        case character_:
-        case boolean_:
-        case integer_:
-        case float_:
-        case array_:
-        case obj_:
-            break;
-        default:
-            ft_printf(err, "can't assign to %t\n", node->right->token->type);
-        }
-        switch (node->left->token->type) // left is the value
-        {
-        case identifier_:
-        case characters_:
-        case character_:
-        case boolean_:
-        case integer_:
-        case float_:
-        case array_:
-        case obj_:
-            break;
-        default:
-            ft_printf(err, "%t can't be assign\n", node->left->token->type);
-        }
-#endif
         Value *left = eval(node->left);
         Value *right = eval(node->right);
         ft_printf(out, "do assignement between %v and %v\n", left, right);
@@ -1531,7 +1488,7 @@ Value *eval(Node *node)
         Value *right = eval(node->right);
         Value *ret = calloc(1, sizeof(Value));
         if (left->type == identifier_)
-            ft_printf(err, "Undeclared variabale '%s'\n", left->name);
+            ft_printf(err, "Undeclared variable '%s'\n", left->name);
         if (left->type != array_ && left->type != characters_)
             ft_printf(err, "can't iterate over type: %t\n", left->type);
         if (right->type != number_ || right->is_float)
@@ -1564,7 +1521,8 @@ Value *eval(Node *node)
         int i = 0;
         while (i < node->token->array_len)
         {
-            node->token->array[i] = eval(head[i]);
+            Value *to_assign = eval(head[i]);
+            node->token->array[i] = to_assign;
             i++;
         }
         return (node->token);
@@ -1576,7 +1534,10 @@ Value *eval(Node *node)
         int i = 0;
         while (i < node->token->object_len)
         {
-            node->token->object[i] = eval(head[i]);
+            Value *to_assign = eval(head[i]);
+            if (to_assign->type == identifier_)
+                ft_printf(err, "key '%s', has no valid value\n", to_assign->name);
+            node->token->object[i] = to_assign;
             i++;
         }
         return (node->token);
@@ -1600,6 +1561,10 @@ Value *eval(Node *node)
     {
         Value *left = eval(node->left);
         Value *right = eval(node->right);
+        if (left->type == identifier_)
+            ft_printf(err, "Undeclared variable '%s'\n", left->name);
+        if (right->type == identifier_)
+            ft_printf(err, "Undeclared variable '%s'\n", right->name);
         Value *ret = calloc(1, sizeof(Value));
         if (left->type == number_ && right->type == number_)
         {
@@ -1614,11 +1579,13 @@ Value *eval(Node *node)
                 number = left->number / right->number;
 
             ret->is_float = left->is_float || right->is_float;
+            ret->type = number_;
             ret->number = number;
             return (ret);
         }
         else if (node->token->type == add_ && left->type == characters_ && right->type == characters_)
         {
+            ret->type = characters_;
             ret->is_char = left->is_char && right->is_char;
             ret->characters = calloc(ft_strlen(left->characters) + ft_strlen(right->characters) + 1, sizeof(char));
             ft_strcpy(ret->characters, left->characters);
@@ -1629,7 +1596,7 @@ Value *eval(Node *node)
         {
             ret->type = array_;
             ret->array_len = left->array_len + right->array_len;
-            ret->array = calloc(node->token->array_len + 1, sizeof(Token *));
+            ret->array = calloc(ret->array_len + 1, sizeof(Token *));
             memcpy(ret->array, left->array, left->array_len * sizeof(Token *));
             memcpy(&ret->array[left->array_len], right->array, right->array_len * sizeof(Token *));
             return (ret);
@@ -1647,6 +1614,10 @@ Value *eval(Node *node)
     {
         Value *left = eval(node->left);
         Value *right = eval(node->right);
+        if (left->type == identifier_)
+            ft_printf(err, "Undeclared variable '%s'\n", left->name);
+        if (right->type == identifier_)
+            ft_printf(err, "Undeclared variable '%s'\n", right->name);
         Value *ret = calloc(1, sizeof(Value));
         ft_printf(out, "do %t between %v and %v\n", node->token->type, left, right);
         if (left->type == number_ && right->type == number_)
@@ -1683,7 +1654,7 @@ Value *eval(Node *node)
         }
         else
         {
-            ft_printf(err, "Error 1: in eval in '%t'\n       left: '%v'\n       right: '%v'\n", node->token->type, left, right);
+            ft_printf(err, "Error 2: in eval in '%t'\n       left: '%v'\n       right: '%v'\n", node->token->type, left, right);
         }
         break;
     }
@@ -1696,6 +1667,10 @@ Value *eval(Node *node)
     {
         Value *left = eval(node->left);
         Value *right = eval(node->right);
+        if (left->type == identifier_)
+            ft_printf(err, "Undeclared variable '%s'\n", left->name);
+        if (right->type == identifier_)
+            ft_printf(err, "Undeclared variable '%s'\n", right->name);
         Value *ret = calloc(1, sizeof(Value));
         if (left->type == number_ && right->type == number_)
         {
@@ -1733,13 +1708,15 @@ Value *eval(Node *node)
         }
         else
         {
-            ft_printf(err, "Error 1: in eval in '%t'\n       left: '%v'\n       right: '%v'\n", node->token->type, left, right);
+            ft_printf(err, "Error 3: in eval in '%t'\n       left: '%v'\n       right: '%v'\n", node->token->type, left, right);
         }
         break;
     }
     case length_:
     {
         Value *left = eval(node->left);
+        if (left->type == identifier_)
+            ft_printf(err, "Undeclared variable '%s'\n", left->name);
         Value *ret = calloc(1, sizeof(Value));
         ret->type = number_;
         if (left->type == characters_)
@@ -1762,9 +1739,7 @@ Value *eval(Node *node)
         Value *left = eval(node->left);
         char *name = node->right->token->name;
         if (left->type == identifier_)
-        {
             ft_printf(err, "Undeclared variable '%s'\n", left->name);
-        }
         // check that left is obj, if you check that right is idenitifier taht may cause error
         // in case there is a variable with same name as this attribute
         // ft_printf(out, "search for %s\n", name);
@@ -1796,6 +1771,10 @@ Value *eval(Node *node)
     {
         Value *left = eval(node->left);
         Value *right = eval(node->right);
+        if (left->type == identifier_)
+            ft_printf(err, "Undeclared variable '%s'\n", left->name);
+        if (right->type == identifier_)
+            ft_printf(err, "Undeclared variable '%s'\n", right->name);
         Value *ret = calloc(1, sizeof(Value));
         if (left->type != boolean_ || right->type != boolean_)
             ft_printf(err, "in %t operation, expected boolean values\n", node->token->type);
