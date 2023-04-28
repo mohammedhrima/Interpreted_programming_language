@@ -1,2 +1,6 @@
-func hello(name):
-    x = 10
+func hello(x, y ):
+    output("x: ",x,"\n")
+    output("y: ",y,"\n")
+
+
+hello(1,2)

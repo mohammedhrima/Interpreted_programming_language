@@ -29,6 +29,7 @@ typedef enum
     error_,
     eof_,
     identifier_,
+    params_,
     characters_,
     boolean_,
     number_,
@@ -109,8 +110,12 @@ struct Token
         // functions_
         struct
         {
-            int params_len;
             Node **params_head;
+            int params_len;
+            Node **func_block_head;
+            int func_block_len;
+            Token *FUNC_VARIABLES[500];
+            int func_var_index;
         };
         // statements
         struct
@@ -235,7 +240,9 @@ int txt_pos;
 Token *tokens[500];
 int tk_pos;
 Token *VARIABLES[500];
+Token *FUNCTIONS[500];
 int var_index;
+int func_index;
 int line = 1;
 int level;
 int start;
@@ -559,6 +566,9 @@ void output(Token *token)
         {
         case identifier_:
             ft_printf(err, "Undeclared variable '%s'\n", token->name);
+        case params_:
+            ft_printf(out, "Parameter with name '%s'\n", token->name);
+            break;
         case characters_:
         {
             char *string = token->characters;
@@ -673,6 +683,14 @@ void visualize_variables(void)
             ft_printf(out, "     %k\n", VARIABLES[i]);
         i++;
     }
+    i = 0;
+    ft_printf(out, "\nfunctions: \n");
+    while (FUNCTIONS[i])
+    {
+        if (FUNCTIONS[i])
+            ft_printf(out, "     %k\n", FUNCTIONS[i]);
+        i++;
+    }
     ft_printf(out, "\n");
 }
 
@@ -700,6 +718,7 @@ char *type_to_string(int type)
         {"LESS THAN OR EQUAL", less_than_or_equal_},
         {"FUNCTION DECLARATION", func_dec},
         {"FUNCTION CALL", func_call},
+        {"PARAMETER", params_},
         {"IF", if_},
         {"ELIF", elif_},
         {"ELSE", else_},
@@ -1282,14 +1301,29 @@ Node *function()
         // expect (
         skip(lparent_);
         // get params
-        node->left = expr();
-        // expect )
+        int len = 0;
+        Node **list = calloc(len + 1, sizeof(Node *));
+        if (tokens[tk_pos]->type != rparent_) // enter if array is not empty
+        {
+            list[len] = equality();
+            len++;
+            list = realloc(list, (len + 1) * sizeof(Node *));
+            while (tokens[tk_pos]->type != rparent_ && tokens[tk_pos]->type != eof_)
+            {
+                skip(comma_);
+                list[len] = equality();
+                len++;
+                list = realloc(list, (len + 1) * sizeof(Node *));
+            }
+        }
         skip(rparent_);
+        node->token->params_head = list;
+        node->token->params_len = len;
 
         // expect :
         skip(dots_);
-        int len = 0;
-        Node **list = calloc(len + 1, sizeof(Node *));
+        len = 0;
+        list = calloc(len + 1, sizeof(Node *));
         list[len] = expr();
         len++;
         list = realloc(list, (len + 1) * sizeof(Node *));
@@ -1299,20 +1333,43 @@ Node *function()
             len++;
             list = realloc(list, (len + 1) * sizeof(Node *));
         }
-        node->right->token->params_head = list;
-        node->right->token->params_len = len;
+        node->token->func_block_head = list;
+        node->token->func_block_len = len;
         return node;
     }
-
-    // else if (left->token->type == identifier_ && tokens[tk_pos + 1]->type == lparent_)
-    // {
-    //     // check if ther is (
-    //     // means it's a function
-    //     // call prime again to get what betwen ()
-    // }
+    Node *node = prime();
+    if (node->token->type == identifier_ && tokens[tk_pos]->type == lparent_)
+    {
+        // check if ther is (
+        // means it's a function
+        // call prime again to get what betwen ()
+        node->token->type = func_call;
+        ft_printf(out, "call function\n");
+        skip(lparent_);
+        int len = 0;
+        Node **list = calloc(len + 1, sizeof(Node *));
+        if (tokens[tk_pos]->type != rparent_) // enter if array is not empty
+        {
+            list[len] = equality();
+            len++;
+            list = realloc(list, (len + 1) * sizeof(Node *));
+            while (tokens[tk_pos]->type != rparent_ && tokens[tk_pos]->type != eof_)
+            {
+                skip(comma_);
+                list[len] = equality();
+                len++;
+                list = realloc(list, (len + 1) * sizeof(Node *));
+            }
+        }
+        skip(rparent_);
+        node->token->params_head = list;
+        node->token->params_len = len;
+        return node;
+        // exit(0);
+    }
 
     // return left;
-    return (prime());
+    return (node);
 }
 #endif
 
@@ -1467,6 +1524,26 @@ Token *new_variable(Token *var)
     return (var);
 }
 
+Token *get_func(char *name)
+{
+    for (int i = 0; i < func_index; i++)
+    {
+        if (ft_strcmp(FUNCTIONS[i]->name, name) == 0)
+        {
+            return (FUNCTIONS[i]);
+        }
+    }
+    ft_printf(err, "function not found %s\n", name);
+    return NULL;
+}
+
+Token *new_func(Token *func)
+{
+    ft_printf(out, "new %v\n", func);
+    FUNCTIONS[func_index++] = func;
+    return (func);
+}
+
 Value *eval(Node *node)
 {
     if (node == NULL)
@@ -1547,6 +1624,7 @@ Value *eval(Node *node)
     case number_:
     case characters_:
     case boolean_:
+    case params_:
     {
         // ft_printf(out, "return %k\n", node->token);
         return (node->token);
@@ -1621,6 +1699,65 @@ Value *eval(Node *node)
             i++;
         }
         return (node->token);
+    }
+    case func_dec:
+    {
+        int i = 0;
+        new_func(node->token);
+#if 0
+        ft_printf(out, "function name %s\n", node->token->name);
+        ft_printf(out, "has parameters:\n");
+        while(i < node->token->params_len)
+        {
+            Value *curr = eval(node->token->params_head[i]);
+            ft_printf(out, "%v\n", curr);
+            // node->left = curr;
+            i++;
+        }
+        ft_printf(out, "start functions:\n");
+        Node **head = node->token->func_block_head;
+        i = 0;
+        while (i < node->token->func_block_len)
+        {
+            eval(head[i]);
+            i++;
+        }
+#endif
+        break;
+        // exit(0);
+    }
+    case func_call:
+    {
+        ft_printf(out, "Call: %v with params:\n", node->token);
+        // int i = 0;
+        // while (i < node->token->params_len)
+        // {
+        //     Value *curr = eval(node->token->params_head[i]);
+        //     ft_printf(out, "%v\n", curr);
+        //     // node->left = curr;
+        //     i++;
+        // }
+        Value *exist = get_func(node->token->name);
+        exist->params_head = node->token->params_head;
+        int i = 0;
+        while (i < node->token->params_len)
+        {
+            Value *curr = eval(exist->params_head[i]);
+            ft_printf(out, "-> %v\n", curr);
+            // node->left = curr;
+            i++;
+        }
+        Node **head = exist->func_block_head;
+        i = 0;
+        while (i < exist->func_block_len)
+        {
+            eval(head[i]);
+            i++;
+        }
+
+        exit(0);
+        // Value *exist = get_func();
+        break;
     }
     // operator
     case add_:
