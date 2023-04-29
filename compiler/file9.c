@@ -29,17 +29,15 @@ typedef enum
     error_,
     eof_,
     identifier_,
-    param_,
+    params_,
     characters_,
     boolean_,
     number_,
     array_,
-    tuple_,
     obj_,
     assign_,
     equal_,
     not_equal_,
-    not_,
     more_than_,
     less_than_,
     more_than_or_equal_,
@@ -64,16 +62,15 @@ typedef enum
     sub_,
     mul_,
     div_,
-    add_assign_,
-    sub_assign_,
-    mul_assign_,
-    div_assign_,
+    add_me,
+    sub_me,
+    mul_me,
+    div_me,
     iteration_,
     dot_,
-    len_,
+    length_,
     func_dec,
     func_call,
-    // bloc_,
 } Type;
 
 struct Token
@@ -84,8 +81,6 @@ struct Token
     int line;
     union
     {
-        // used when building Token
-
         struct
         {
             long double number; // integer, float
@@ -100,62 +95,50 @@ struct Token
         // array
         struct
         {
-            Node **array_head;
             Token **array;
+            Node **array_head;
             int array_len;
         };
         // object
         struct
         {
-            Node **object_head;
             char **keys;
             Token **object;
+            Node **object_head;
             int object_len;
         };
-        // block
+        // functions_
         struct
         {
-            Token *PREV_VARIABLES;
-            Token *VARIABLES[100];
-            int var_index;
-            Node **bloc_head;
+            Node **params_head;
+            int params_len;
+            Node **func_block_head;
+            int func_block_len;
+            Token *FUNC_VARIABLES[500];
+            int func_var_index;
         };
-        int len;
-        // functions_
-        // struct
-        // {
-        //     Node **params_head;
-        //     int params_len;
-        //     Node **func_block_head;
-        //     int func_block_len;
-        //     Token *FUNC_VARIABLES[500];
-        //     int func_var_index;
-        // };
+        // statements
+        struct
+        {
+            Node *conditions_head;
+            int conditions_len;
+            Node **block_head;
+            int block_len;
+            Node *elif_tk;
+            Node *else_tk;
+        };
     };
 };
-// alpha tokens
-// will be gotten ass identifiers
-// then I compare them to the values here to check if it's one of them
-// else it will be stored as identifier
+
 struct
 {
     char *name;
     Type type;
-} alpha_tokens[] = {
-    {"if", if_},
-    {"elif", elif_},
+} statements_tokens[] = {
+    {"if ", if_},
+    {"elif ", elif_},
     {"else", else_},
-    {"while", while_},
-    {"func", func_dec},
-    {"output", output_},
-    {"input", input_},
-    {"true", boolean_},
-    {"false", boolean_},
-    {"and", and_},
-    {"or", or_},
-    {"is", equal_},
-    {"not", not_},
-    {"len", len_},
+    {"while ", while_},
     {0, 0},
 };
 
@@ -165,14 +148,17 @@ struct
     Type type;
 } operators_tokens[] = {
     {"&&", and_},
+    {"and ", and_},
     {"||", or_},
+    {"or ", or_},
     {"==", equal_},
+    {"is", equal_},
     {"!=", not_equal_},
-    {"!", not_},
-    {"+=", add_assign_},
-    {"-=", sub_assign_},
-    {"*=", mul_assign_},
-    {"/=", div_assign_},
+    {"is not", not_equal_},
+    {"+=", add_me},
+    {"-=", sub_me},
+    {"*=", mul_me},
+    {"/=", div_me},
     {"<", less_than_},
     {">", more_than_},
     {"<=", less_than_or_equal_},
@@ -190,7 +176,6 @@ struct
     {"*", mul_},
     {"/", div_},
     {":", dots_},
-    {".", dot_},
     {0, 0},
 };
 
@@ -198,11 +183,46 @@ struct
 {
     char *special;
     char replace;
-} special_characters[] = {
-    {"\\n", '\n'},
-    {"\\\"", '\"'},
-    {"\\\'", '\''},
-    {"\\\\", '\\'},
+} special_characters[] =
+    {
+        {"\\n", '\n'},
+        {"\\\"", '\"'},
+        {"\\\'", '\''},
+        {"\\\\", '\\'},
+        {0, 0},
+};
+
+struct
+{
+    char *name;
+    Type type;
+} attributes_tokens[] = {
+    {".len", length_},
+    {".", dot_},
+    {0, 0},
+};
+
+struct
+{
+    char *name;
+    Type type;
+} functions_tokens[] = {
+    {"func ", func_dec},
+    {"output", output_},
+    {"input", input_},
+    {0, 0},
+};
+
+struct
+{
+    char *name;
+    bool value;
+    Type type;
+} boolean_tokens[] = {
+    {"true ", true, boolean_},
+    {"false ", false, boolean_},
+    {"true\n", true, boolean_},
+    {"false\n", false, boolean_},
     {0, 0},
 };
 
@@ -219,7 +239,6 @@ char *text;
 int txt_pos;
 Token *tokens[500];
 int tk_pos;
-int tmp_tk;
 Token *VARIABLES[500];
 Token *FUNCTIONS[500];
 int var_index;
@@ -454,12 +473,9 @@ void ft_printf(int fd, char *fmt, ...)
                         // ft_putstr(fd, ", in position [");
                         // ft_putnbr(fd, token->index);
                         // ft_putstr(fd, "]");
-                        if (token->line >= 0)
-                        {
-                            ft_putstr(fd, ", in line [");
-                            ft_putnbr(fd, token->line);
-                            ft_putstr(fd, "]");
-                        }
+                        ft_putstr(fd, ", in line [");
+                        ft_putnbr(fd, token->line);
+                        ft_putstr(fd, "]");
                         ft_putstr(fd, ", in level [");
                         ft_putnbr(fd, token->level);
                         ft_putstr(fd, "]");
@@ -492,9 +508,11 @@ void ft_printf(int fd, char *fmt, ...)
             exit(1);
     }
 }
+
 // built in functions
 void output(Token *token)
 {
+    //"\033[31mHello World!\n\033[0m"
     int fd = 0;
     ft_putstr(fd, "\033[31m");
     if (token)
@@ -503,9 +521,9 @@ void output(Token *token)
         {
         case identifier_:
             ft_printf(err, "Undeclared variable '%s'\n", token->name);
-        // case params_:
-        //     ft_printf(out, "Parameter with name '%s'\n", token->name);
-        //     break;
+        case params_:
+            ft_printf(out, "Parameter with name '%s'\n", token->name);
+            break;
         case characters_:
         {
             char *string = token->characters;
@@ -533,6 +551,8 @@ void output(Token *token)
                     }
                     if (string[i] == '\0')
                         break;
+                    // ft_putchar(fd, string[i]);
+                    // i++;
                 }
             }
             break;
@@ -594,11 +614,24 @@ void output(Token *token)
         ft_putstr(fd, "NULL");
     ft_putstr(fd, "\033[0m");
 }
-// Debuging functions
+
+// debuging functions
+void indexes()
+{
+
+    int i = 0;
+    ft_putstr(out, "\n");
+    while (text && text[i])
+    {
+        ft_putnbr(out, i % 10);
+        i++;
+    }
+    ft_putstr(out, "\n");
+}
 void visualize_variables(void)
 {
     int i = 0;
-    ft_printf(out, "\n\nvariables: \n");
+    ft_printf(out, "\nvariables: \n");
     while (VARIABLES[i])
     {
         if (VARIABLES[i])
@@ -634,14 +667,13 @@ char *type_to_string(int type)
         {"ASSIGNEMENT", assign_},
         {"EQUAL", equal_},
         {"NOT EQUAL", not_equal_},
-        {"NOT", not_},
         {"MORE THAN", more_than_},
         {"LESS THAN", less_than_},
         {"MORE THAN OR EQUAL", more_than_or_equal_},
         {"LESS THAN OR EQUAL", less_than_or_equal_},
         {"FUNCTION DECLARATION", func_dec},
         {"FUNCTION CALL", func_call},
-        {"PARAMETER", param_},
+        {"PARAMETER", params_},
         {"IF", if_},
         {"ELIF", elif_},
         {"ELSE", else_},
@@ -663,12 +695,12 @@ char *type_to_string(int type)
         {"MULTIPLACTION", mul_},
         {"DIVISION", div_},
         {"ITERATION", iteration_},
-        {"ADD ASSIGN", add_assign_},
-        {"SUB ASSIGN", sub_assign_},
-        {"DIV ASSIGN", div_assign_},
-        {"MUL ASSIGN", mul_assign_},
+        {"ADD ME", add_me},
+        {"SUB ME", sub_me},
+        {"DIV ME", div_me},
+        {"MUL ME", mul_me},
         {"DOT", dot_},
-        {"LEN", len_},
+        {"LENGTH", length_},
         {0, 0},
     };
     for (int i = 0; Types[i].string; i++)
@@ -693,30 +725,8 @@ Token *new_token(Type type)
     {
     case identifier_:
     {
-        type = 0;
-        char *value = calloc(txt_pos - start + 1, sizeof(char));
-        ft_strncpy(value, text + start, txt_pos - start);
-        for (int i = 0; alpha_tokens[i].name; i++)
-        {
-            if (ft_strcmp(value, alpha_tokens[i].name) == 0)
-            {
-                type = alpha_tokens[i].type;
-                break;
-            }
-        }
-        if (type)
-        {
-            new->type = type;
-            if (type == boolean_)
-            {
-                if (ft_strcmp(value, "true") == 0)
-                    new->boolean = true;
-                else if (ft_strcmp(value, "false") == 0)
-                    new->boolean = false;
-            }
-        }
-        else
-            new->name = value;
+        new->name = calloc(txt_pos - start + 1, sizeof(char));
+        ft_strncpy(new->name, text + start, txt_pos - start);
         break;
     }
     case characters_:
@@ -749,8 +759,11 @@ Token *new_token(Type type)
         break;
     }
     default:
-        type_to_string(type);
-        break;
+        if (type_to_string(type) == NULL)
+        {
+            ft_printf(err, "verify given token '%t'\n", type);
+            exit(1);
+        }
     }
     ft_printf(out, "new token: %k\n", new);
     tokens[tk_pos] = new;
@@ -775,12 +788,6 @@ void build_tokens()
             txt_pos++;
             continue;
         }
-        // if (ft_strncmp(&text[txt_pos], "//", ft_strlen("//")) == 0)
-        // {
-        //     while (text[txt_pos] && text[txt_pos] != '\n')
-        //         txt_pos++;
-        //     continue;
-        // }
         if (ft_strncmp(text + txt_pos, tab_space, ft_strlen(tab_space)) == 0)
         {
             level++;
@@ -805,8 +812,86 @@ void build_tokens()
         if (type)
         {
             new_token(type);
-            if (type == dots_) // for if statements and while loops ...
+            if (type == dots_)
                 level++;
+            continue;
+        }
+        type = 0;
+        for (int i = 0; statements_tokens[i].type; i++)
+        {
+            if (ft_strncmp(statements_tokens[i].name, text + txt_pos, ft_strlen(statements_tokens[i].name)) == 0)
+            {
+                type = statements_tokens[i].type;
+                txt_pos += ft_strlen(statements_tokens[i].name);
+                break;
+            }
+        }
+        if (type)
+        {
+            new_token(type);
+            continue;
+        }
+        type = 0;
+        for (int i = 0; attributes_tokens[i].type; i++)
+        {
+            if (ft_strncmp(attributes_tokens[i].name, text + txt_pos, ft_strlen(attributes_tokens[i].name)) == 0)
+            {
+                type = attributes_tokens[i].type;
+                txt_pos += ft_strlen(attributes_tokens[i].name);
+                break;
+            }
+        }
+        if (type)
+        {
+            new_token(type);
+            continue;
+        }
+        type = 0;
+        for (int i = 0; functions_tokens[i].type; i++)
+        {
+            if (ft_strncmp(functions_tokens[i].name, text + txt_pos, ft_strlen(functions_tokens[i].name)) == 0)
+            {
+                type = functions_tokens[i].type;
+                txt_pos += ft_strlen(functions_tokens[i].name);
+                break;
+            }
+        }
+        if (type)
+        {
+            new_token(type);
+            continue;
+        }
+        bool value;
+        for (int i = 0; boolean_tokens[i].type; i++)
+        {
+            if (ft_strncmp(boolean_tokens[i].name, text + txt_pos, ft_strlen(boolean_tokens[i].name)) == 0)
+            {
+                type = boolean_tokens[i].type;
+                value = boolean_tokens[i].value;
+                txt_pos += ft_strlen(boolean_tokens[i].name);
+                break;
+            }
+        }
+        if (type)
+        {
+            token = new_token(type);
+            token->boolean = value;
+            continue;
+        }
+        int isboolean = ft_strcmp(text + txt_pos, "true");
+        if (isboolean == 0 || isboolean == ' ' || isboolean == '\n')
+        {
+            token = new_token(boolean_);
+            token->boolean = true;
+            txt_pos += ft_strlen("true");
+            continue;
+        }
+        isboolean = ft_strcmp(text + txt_pos, "false");
+        if (isboolean == 0 || isboolean == ' ' || isboolean == '\n')
+        {
+            token = new_token(boolean_);
+            token->boolean = false;
+            txt_pos += ft_strlen("false");
             continue;
         }
         if (ft_isalpha(text[txt_pos]))
@@ -848,21 +933,20 @@ void build_tokens()
 }
 
 // build nodes
-Node *expr();           // expr
-Node *assign();         // = += -= *= /=
-Node **bloc(int level); // start with tab
-Node *tenary();         // while, if, elif, else
-Node *logic_or();       // || or
-Node *logic_and();      // && and
-Node *equality();       // ==  !=
-Node *comparison();     // < > <= >=
-Node *add_sub();        // + -
-Node *mul_div();        // * /
-Node *unary();          // sign + -
-Node *attribute();      // .len ...
-Node *iteration();      // iterate with index
-Node *function();       // functions
-Node *prime();          // final value
+Node *expr();       // expr
+Node *assign();     // =
+Node *tenary();     // if statement
+Node *logic_or();   // || or
+Node *logic_and();  // && and
+Node *equality();   // ==  !=
+Node *comparison(); // < > <= >=
+Node *add_sub();    // + -
+Node *mul_div();    // * /
+Node *unary();      // sign + -
+Node *iteration();  // iterate with index
+Node *function();   // functions
+Node *attribute();  // .len ...
+Node *prime();      // final value
 
 Node *new_node(Token *token)
 {
@@ -884,16 +968,22 @@ Node *expr()
     return assign();
 }
 
-int is_assign(Type type)
-{
-    return (type == assign_ || type == add_assign_ || type == mul_assign_ || type == div_assign_);
-}
-
-// = += -= *= /=
 Node *assign()
 {
     Node *left = tenary();
-    if (is_assign(tokens[tk_pos]->type))
+    if (tokens[tk_pos]->type == assign_)
+    {
+        Node *node = new_node(tokens[tk_pos]);
+        skip(tokens[tk_pos]->type);
+        node->left = left;
+        node->right = tenary();
+        left = node;
+    }
+    else if (
+        tokens[tk_pos]->type == add_me ||
+        tokens[tk_pos]->type == sub_me ||
+        tokens[tk_pos]->type == mul_me ||
+        tokens[tk_pos]->type == div_me)
     {
         Node *node = new_node(tokens[tk_pos]);
         skip(tokens[tk_pos]->type);
@@ -904,78 +994,99 @@ Node *assign()
     return left;
 }
 
-// bloc
-Node **bloc(int lvl) // expected level
-{
-    ft_printf(out, "start bloc from %d\n", tokens[tk_pos]->line);
-    if (tokens[tk_pos]->level < lvl)
-        ft_printf(err, "Expected tab\n");
-    int len = 0;
-
-    Node **list = calloc(len + 1, sizeof(Node *));
-    list[len] = expr();
-    len++;
-    list = realloc(list, (len + 1) * sizeof(Node *));
-    while (tokens[tk_pos]->type != eof_ && tokens[tk_pos]->level == lvl)
-    {
-        list[len] = expr();
-        ft_printf(out, "curr level -> %d, and %k\n", tokens[tk_pos]->level, list[len]->token);
-        len++;
-        list = realloc(list, (len + 1) * sizeof(Node *));
-    }
-    list[len] = NULL;
-    ft_printf(out, "exit bloc from %d with len %d\n", tokens[tk_pos]->line, len);
-    return list;
-}
-
-// while, if, elif, else
 Node *tenary()
 {
-    if (tokens[tk_pos]->type == if_ || tokens[tk_pos]->type == elif_)
+    if (tokens[tk_pos]->type == while_)
     {
         Node *node = new_node(tokens[tk_pos]);
-        int curr_level = tokens[tk_pos]->level;
+        int while_level = tokens[tk_pos]->level;
         skip(tokens[tk_pos]->type);
-
-        // left is condition
-        node->left = expr();
-        if (node->left == NULL)
-            ft_printf(err, "Expected condition\n");
+        if (tokens[tk_pos]->type == dots_)
+            ft_printf(err, "Expected expression before ':'\n");
+        node->token->conditions_head = expr(); // to be verified after
         skip(dots_);
-        // right is bloc
-        node->token->bloc_head = bloc(curr_level + 1);
-
-        if (tokens[tk_pos]->type == elif_)
+        // expect tab
+        if (tokens[tk_pos + 1]->level <= while_level)
+            ft_printf(err, "expected %d tab(s) in line %d\n", while_level + 1, tokens[tk_pos + 1]->line);
+        // get block
+        int len = 0;
+        Node **list = calloc((len + 1), sizeof(Node *));
+        list[len] = expr();
+        len++;
+        list = realloc(list, (len + 1) * sizeof(Node *));
+        while (tokens[tk_pos]->level == while_level + 1 && tokens[tk_pos]->type != eof_)
         {
-            node->right = tenary();
+            list[len] = expr();
+            len++;
+            list = realloc(list, (len + 1) * sizeof(Node *));
+        }
+        node->token->block_head = list;
+        node->token->block_len = len;
+        // ft_printf(out, "block len : %d\n", len);
+        return node;
+    }
+    else if (tokens[tk_pos]->type == if_ || tokens[tk_pos]->type == elif_)
+    {
+        Node *node = new_node(tokens[tk_pos]);
+        int if_level = tokens[tk_pos]->level;
+        skip(tokens[tk_pos]->type);
+        if (tokens[tk_pos]->type == dots_)
+            ft_printf(err, "Expected expression before ':'\n");
+        node->token->conditions_head = expr(); // to be verified after
+        skip(dots_);
+        // expect tab
+        if (tokens[tk_pos + 1]->level <= if_level)
+            ft_printf(err, "expected %d tab(s) in line %d\n", if_level + 1, tokens[tk_pos + 1]->line);
+        // get block
+        int len = 0;
+        Node **list = calloc((len + 1), sizeof(Node *));
+        list[len] = expr();
+        len++;
+        list = realloc(list, (len + 1) * sizeof(Node *));
+        while (tokens[tk_pos]->level == if_level + 1 && tokens[tk_pos]->type != eof_)
+        {
+            list[len] = expr();
+            len++;
+            list = realloc(list, (len + 1) * sizeof(Node *));
+        }
+        node->token->block_head = list;
+        node->token->block_len = len;
+        // if there is elif
+        Node *elif = node;
+        while (tokens[tk_pos]->type == elif_)
+        {
+            elif->token->elif_tk = tenary();
+            elif = elif->token->elif_tk;
         }
         if (tokens[tk_pos]->type == else_)
         {
-            node->right = new_node(tokens[tk_pos]);
+            node->token->else_tk = new_node(tokens[tk_pos]);
+            int else_level = tokens[tk_pos]->level;
             skip(tokens[tk_pos]->type);
             skip(dots_);
-            node->right->token->bloc_head = bloc(curr_level + 1);
+            if (tokens[tk_pos + 1]->level <= else_level)
+                ft_printf(err, "expected %d tab(s) in line %d\n", else_level + 1, tokens[tk_pos + 1]->line);
+            // get block
+            int len = 0;
+            Node **list = calloc(len + 1, sizeof(Node *));
+            list[len] = expr();
+            len++;
+            list = realloc(list, (len + 1) * sizeof(Node *));
+            while (tokens[tk_pos]->level == else_level + 1 && tokens[tk_pos]->type != eof_)
+            {
+                list[len] = expr();
+                len++;
+                list = realloc(list, (len + 1) * sizeof(Node *));
+            }
+            node->token->else_tk->token->block_head = list;
+            node->token->else_tk->token->block_len = len;
         }
         return node;
     }
-    else if (tokens[tk_pos]->type == while_)
-    {
-        Node *node = new_node(tokens[tk_pos]);
-        int curr_level = tokens[tk_pos]->level;
-        skip(tokens[tk_pos]->type);
-        // left is condition
-        node->left = expr();
-        if (node->left == NULL)
-            ft_printf(err, "Expected condition\n");
-        skip(dots_);
-        // right is bloc
-        node->token->bloc_head = bloc(curr_level + 1);
-        return node;
-    }
+
     return logic_or();
 }
 
-// || or
 Node *logic_or()
 {
     Node *left = logic_and();
@@ -990,7 +1101,6 @@ Node *logic_or()
     return left;
 }
 
-// && and
 Node *logic_and()
 {
     Node *left = equality();
@@ -1005,7 +1115,6 @@ Node *logic_and()
     return left;
 }
 
-// ==  !=
 Node *equality()
 {
     Node *left = comparison();
@@ -1020,27 +1129,22 @@ Node *equality()
     return left;
 }
 
-int is_comparison(Type type)
-{
-    return (type == less_than_ || type == more_than_ || type == less_than_or_equal_ || type == more_than_or_equal_);
-}
-
-// < > <= >=
 Node *comparison()
 {
     Node *left = add_sub();
-    if (is_comparison(tokens[tk_pos]->type))
+    if (
+        tokens[tk_pos]->type == less_than_ || tokens[tk_pos]->type == more_than_ ||
+        tokens[tk_pos]->type == less_than_or_equal_ || tokens[tk_pos]->type == more_than_or_equal_)
     {
         Node *node = new_node(tokens[tk_pos]);
-        skip(tokens[tk_pos]->type);
         node->left = left;
+        skip(tokens[tk_pos]->type);
         node->right = add_sub();
         left = node;
     }
     return left;
 }
 
-// + -
 Node *add_sub()
 {
     Node *left = mul_div();
@@ -1055,7 +1159,6 @@ Node *add_sub()
     return left;
 }
 
-// * /
 Node *mul_div()
 {
     Node *left = unary();
@@ -1070,109 +1173,133 @@ Node *mul_div()
     return left;
 }
 
-// sign + -
 Node *unary()
 {
     if (tokens[tk_pos]->type == sub_)
     {
+        Token *minus = calloc(1, sizeof(Token));
+        minus->type = number_;
+        minus->number = -1;
+        tokens[tk_pos]->type = mul_;
         Node *node = new_node(tokens[tk_pos]);
         skip(tokens[tk_pos]->type);
-        node->token->type = mul_;
-        node->left = new_node(new_token(number_));
-        node->left->token->number = -1;
+        node->left = new_node(minus);
         node->right = attribute();
         return node;
     }
     return attribute();
 }
 
-// .len ...
 Node *attribute()
 {
     Node *left = iteration();
-    if (tokens[tk_pos]->type == dot_)
+    // for object
+    while (tokens[tk_pos]->type == dot_)
     {
         Node *node = new_node(tokens[tk_pos]);
         skip(tokens[tk_pos]->type);
         node->left = left;
         node->right = iteration();
+        if (node->right->token->type != identifier_ && node->right->token->type != length_)
+            ft_printf(err, "Expected identifier got '%t'", node->right->token->type);
         left = node;
+    }
+    if (tokens[tk_pos]->type == length_)
+    {
+        Node *node = new_node(tokens[tk_pos]);
+        skip(tokens[tk_pos]->type);
+        node->left = left;
+        node->right = NULL;
+        return node;
     }
     return left;
 }
 
-// iterate with [index]
 Node *iteration()
 {
     Node *left = function();
+
     if (tokens[tk_pos]->type == lbracket_)
     {
+        // call function here because prime get what between ()
         Node *node = new_node(tokens[tk_pos]);
         skip(tokens[tk_pos]->type);
         node->token->type = iteration_;
         node->left = left;
+        // node->right = function();
         node->right = function();
-        skip(rbracket_);
-        return node;
-    }
-    if (left->token->type == identifier_ && tokens[tk_pos]->type == lparent_)
-    {
-        ft_printf(out, "Call function\n");
-        Node *node = new_node(left->token); // to be verified after
-        node->token->type = func_call;
 
-        skip(lparent_);
-        // node->left = prime();
-        int len = 0;
-        if (tokens[tk_pos]->type != rparent_)
-        {
-            node->left = prime();
-            len++;
-            while (tokens[tk_pos]->type != rparent_)
-            {
-                prime();
-                if (tokens[tk_pos]->type != rparent_)
-                    skip(comma_);
-                len++;
-            }
-        }
-        skip(rparent_);
-        node->token->len = len;
+        // skip )
+        skip(rbracket_);
+        // ft_printf(out, "return from iterate\n");
         return node;
-        // exit(0);
     }
     return left;
 }
-
-// functions
+#if 1
 Node *function()
 {
-    // function call is in iteration
+    ft_printf(out, "Enter function\n");
     if (tokens[tk_pos]->type == func_dec)
     {
         ft_printf(out, "build function\n");
-        Node *node = new_node(tokens[tk_pos]);
+        Node *node = NULL;
         int func_level = tokens[tk_pos]->level;
-        skip(func_dec);
 
-        Node *func_name = prime();
-        if (func_name->token->type != identifier_)
-            ft_printf(err, "Error: Expected an identifier after 'func'\n");
-        // function name
-        node->token->name = func_name->token->name;
-        // function params
-        node->left = prime();
+        skip(func_dec);
+        node = prime(); // should save this name
+        // skip(identifier_);
+        if (node->token->type != identifier_)
+            ft_printf(err, "Error in function, Expected identifier name\n");
+        node->token->type = func_dec;
+
+        // expect (
+        skip(lparent_);
+        // get params
+        int len = 0;
+        Node **list = calloc(len + 1, sizeof(Node *));
+        if (tokens[tk_pos]->type != rparent_) // enter if array is not empty
+        {
+            list[len] = equality();
+            len++;
+            list = realloc(list, (len + 1) * sizeof(Node *));
+            while (tokens[tk_pos]->type != rparent_ && tokens[tk_pos]->type != eof_)
+            {
+                skip(comma_);
+                list[len] = equality();
+                len++;
+                list = realloc(list, (len + 1) * sizeof(Node *));
+            }
+        }
+        skip(rparent_);
+        node->token->params_head = list;
+        node->token->params_len = len;
+
+        // expect :
         skip(dots_);
-        if (node->left->token->type != tuple_)
-            ft_printf(err, "Error: Expected tuple after functions declaration\n");
-        // node->right; //code block
-        node->token->bloc_head = bloc(func_level + 1);
+        len = 0;
+        list = calloc(len + 1, sizeof(Node *));
+        list[len] = expr();
+        len++;
+        list = realloc(list, (len + 1) * sizeof(Node *));
+        while (tokens[tk_pos]->level == func_level + 1 && tokens[tk_pos]->type != eof_)
+        {
+            list[len] = expr();
+            len++;
+            list = realloc(list, (len + 1) * sizeof(Node *));
+        }
+        node->token->func_block_head = list;
+        node->token->func_block_len = len;
         return node;
     }
-    if (tokens[tk_pos]->type == output_)
+    Node *node = prime();
+    if (node->token->type == identifier_ && tokens[tk_pos]->type == lparent_)
     {
-        Node *left = new_node(tokens[tk_pos]);
-        skip(output_);
+        // check if ther is (
+        // means it's a function
+        // call prime again to get what betwen ()
+        node->token->type = func_call;
+        ft_printf(out, "call function\n");
         skip(lparent_);
         int len = 0;
         Node **list = calloc(len + 1, sizeof(Node *));
@@ -1190,65 +1317,42 @@ Node *function()
             }
         }
         skip(rparent_);
-        left->token->array_head = list;
-        left->token->array_len = len;
-        return left;
+        node->token->params_head = list;
+        node->token->params_len = len;
+        return node;
+        // exit(0);
     }
-    return (prime());
-}
 
-int is_prime(Type type)
-{
-    return (type == identifier_ || type == number_ || type == characters_ || type == boolean_);
+    // return left;
+    return (node);
 }
+#endif
 
 Node *prime()
 {
     Node *left = NULL;
-    // if(tokens[tk_pos]->level < lvl)
-    //     return NULL;
-    if (is_prime(tokens[tk_pos]->type))
+    if (
+        tokens[tk_pos]->type == number_ ||
+        tokens[tk_pos]->type == characters_ ||
+        tokens[tk_pos]->type == boolean_ ||
+        tokens[tk_pos]->type == identifier_ ||
+        tokens[tk_pos]->type == func_dec)
     {
         left = new_node(tokens[tk_pos]);
+        // if(tokens[tk_pos])
         skip(tokens[tk_pos]->type);
     }
-    else if (tokens[tk_pos]->type == lbracket_)
-    {
-        left = new_node(tokens[tk_pos]);
-        skip(lbracket_);
-        left->token->type = array_;
-        int len = 0;
-        Node **list = calloc(len + 1, sizeof(Node *));
-        if (tokens[tk_pos]->type != rbracket_) // enter if array is not empty
-        {
-            list[len] = assign(); // to be checked after
-            len++;
-            list = realloc(list, (len + 1) * sizeof(Node *));
-            while (tokens[tk_pos]->type != rbracket_ && tokens[tk_pos]->type != eof_)
-            {
-                skip(comma_);
-                list[len] = assign();
-                len++;
-                list = realloc(list, (len + 1) * sizeof(Node *));
-            }
-        }
-        skip(rbracket_);
-        left->token->array_head = list;
-        left->token->array_len = len;
-    }
+#if 0
     else if (tokens[tk_pos]->type == lparent_)
     {
         left = new_node(tokens[tk_pos]);
         skip(lparent_);
-        left->token->type = tuple_;
+        left->token->type = array_;
         int len = 0;
         Node **list = calloc(len + 1, sizeof(Node *));
         if (tokens[tk_pos]->type != rparent_) // enter if array is not empty
         {
-            list[len] = prime(); // to be checked after
-            if (list[len]->token->type != identifier_)
-                ft_printf(err, "Error in tuple, expected identifier");
-            list[len]->token->type = param_; // set it as param
+            list[len] = assign();
             len++;
             list = realloc(list, (len + 1) * sizeof(Node *));
             while (tokens[tk_pos]->type != rparent_ && tokens[tk_pos]->type != eof_)
@@ -1260,8 +1364,35 @@ Node *prime()
             }
         }
         skip(rparent_);
-        left->token->array_head = list;
         left->token->array_len = len;
+        left->token->array_head = list;
+        return left;
+    }
+#endif
+    else if (tokens[tk_pos]->type == lbracket_)
+    {
+        left = new_node(tokens[tk_pos]);
+        skip(lbracket_);
+        left->token->type = array_;
+        int len = 0;
+        Node **list = calloc(len + 1, sizeof(Node *));
+        if (tokens[tk_pos]->type != rbracket_) // enter if array is not empty
+        {
+            list[len] = assign();
+            len++;
+            list = realloc(list, (len + 1) * sizeof(Node *));
+            while (tokens[tk_pos]->type != rbracket_ && tokens[tk_pos]->type != eof_)
+            {
+                skip(comma_);
+                list[len] = assign();
+                len++;
+                list = realloc(list, (len + 1) * sizeof(Node *));
+            }
+        }
+        skip(rbracket_);
+        left->token->array_len = len;
+        left->token->array_head = list;
+        return left;
     }
     else if (tokens[tk_pos]->type == lcbracket_)
     {
@@ -1278,6 +1409,7 @@ Node *prime()
             skip(dots_); // expect dots
             keys[len] = identifier->name;
             list[len] = add_sub();
+            // list[len]->token->name = name;
             len++;
             list = realloc(list, (len + 1) * sizeof(Node *));
             keys = realloc(keys, (len + 1) * sizeof(char *));
@@ -1298,12 +1430,37 @@ Node *prime()
         left->token->keys = keys;
         left->token->object_len = len;
         left->token->object_head = list;
+        return left;
     }
-
+    else if (tokens[tk_pos]->type == output_)
+    {
+        left = new_node(tokens[tk_pos]);
+        skip(output_);
+        skip(lparent_);
+        int len = 0;
+        Node **list = calloc(len + 1, sizeof(Node *));
+        if (tokens[tk_pos]->type != rparent_) // enter if array is not empty
+        {
+            list[len] = equality();
+            len++;
+            list = realloc(list, (len + 1) * sizeof(Node *));
+            while (tokens[tk_pos]->type != rparent_ && tokens[tk_pos]->type != eof_)
+            {
+                skip(comma_);
+                list[len] = equality();
+                len++;
+                list = realloc(list, (len + 1) * sizeof(Node *));
+            }
+        }
+        skip(rparent_);
+        left->token->params_head = list;
+        left->token->params_len = len;
+        return left;
+    }
     return left;
 }
 
-// Evaluate
+// evaluate
 Token *get_var(char *name)
 {
     for (int i = 0; i < var_index; i++)
@@ -1346,6 +1503,7 @@ Value *eval(Node *node)
 {
     if (node == NULL)
         return NULL;
+    // ft_printf(out, "eval received %t\n", node->token->type);
     switch (node->token->type)
     {
     // assignement
@@ -1354,12 +1512,15 @@ Value *eval(Node *node)
         Value *left = eval(node->left);
         Value *right = eval(node->right);
         ft_printf(out, "do assignement between %v and %v\n", left, right);
+
         if (right->type == identifier_)
             ft_printf(err, "Error , Undclared variable: %s\n", right->name);
+
         if (left->type != identifier_ && left->type != right->type)
             ft_printf(err, "can't assign '%s' type %t to '%s' type %t \n", left->name, left->type, right->name, right->type);
 
         char *name = left->name;
+        // int index = left->index;
         if (right->type == characters_ && right->is_char == true)
         {
             if (left->type == identifier_)
@@ -1407,6 +1568,7 @@ Value *eval(Node *node)
     }
     // identifier
     case identifier_:
+    case params_:
     {
         Value *identifier = get_var(node->token->name);
         if (identifier)
@@ -1414,16 +1576,12 @@ Value *eval(Node *node)
         else
             return (new_variable(node->token));
     }
-    case param_:
-    {
-        // add VARIABLES for each functions
-        return (node->token);
-    }
-    // values
+    // value
     case number_:
     case characters_:
     case boolean_:
     {
+        // ft_printf(out, "return %k\n", node->token);
         return (node->token);
     }
     case iteration_:
@@ -1459,15 +1617,13 @@ Value *eval(Node *node)
     }
     case array_:
     {
+        // verify if I should add ret
         Node **head = node->token->array_head;
         node->token->array = calloc(node->token->array_len + 1, sizeof(Node *));
-
         int i = 0;
         while (i < node->token->array_len)
         {
             Value *to_assign = eval(head[i]);
-            if (to_assign->type == identifier_)
-                ft_printf(err, "key '%s', has no valid value\n", to_assign->name);
             node->token->array[i] = to_assign;
             i++;
         }
@@ -1477,7 +1633,6 @@ Value *eval(Node *node)
     {
         Node **head = node->token->object_head;
         node->token->object = calloc(node->token->object_len + 1, sizeof(Node *));
-
         int i = 0;
         while (i < node->token->object_len)
         {
@@ -1489,54 +1644,78 @@ Value *eval(Node *node)
         }
         return (node->token);
     }
-    case if_:
-    case elif_:
+    case output_:
     {
-        Value *condition = eval(node->left);
-        if (condition->type != boolean_)
-            ft_printf(err, "Error in if_ elif_, exepected boolean value\n");
-        if (condition->boolean)
-        {
-            Node **bloc_head = node->token->bloc_head;
-            int i = 0;
-            while (bloc_head[i])
-            {
-                eval(bloc_head[i]);
-                i++;
-            }
-        }
-        else
-            eval(node->right);
-        return (condition); // to be verified
-    }
-    case else_:
-    {
-        Node **bloc_head = node->token->bloc_head;
+        Node **head = node->token->params_head;
         int i = 0;
-        while (bloc_head[i])
+        while (i < node->token->params_len)
         {
-            eval(bloc_head[i]);
+            output(eval(head[i]));
             i++;
         }
-        return (NULL);
+        return (node->token);
     }
-    case while_:
+    case func_dec:
     {
-        Value *condition = eval(node->left);
-        if (condition->type != boolean_)
-            ft_printf(err, "Error in while_, exepected boolean value\n");
-        while (condition->boolean)
+        int i = 0;
+        ç
+#if 0
+        ft_printf(out, "function name %s\n", node->token->name);
+        ft_printf(out, "has parameters:\n");
+        while(i < node->token->params_len)
         {
-            Node **bloc_head = node->token->bloc_head;
-            int i = 0;
-            while (bloc_head[i])
-            {
-                eval(bloc_head[i]);
-                i++;
-            }
-            condition = eval(node->left);
+            Value *curr = eval(node->token->params_head[i]);
+            ft_printf(out, "%v\n", curr);
+            // node->left = curr;
+            i++;
         }
-        return (condition); // to be verified
+        ft_printf(out, "start functions:\n");
+        Node **head = node->token->func_block_head;
+        i = 0;
+        while (i < node->token->func_block_len)
+        {
+            eval(head[i]);
+            i++;
+        }
+#endif
+        break;
+        // exit(0);
+    }
+    case func_call:
+    {
+        ft_printf(out, "Call: %v with params:\n", node->token);
+        int i = 0;
+        // while (i < node->token->params_len)
+        // {
+        //     Value *curr = eval(node->token->params_head[i]);
+        //     ft_printf(out, "-> %v\n", curr);
+        //     // node->left = curr;
+        //     i++;
+        // }
+        Value *exist = get_func(node->token->name);
+        // exist->params_head = node->token->params_head;
+        i = 0;
+        while (i < exist->params_len)
+        {
+            Value *id = eval(exist->params_head[i]);
+            Value *val = node->token->params_head[i]->token;
+            char *name = id->name;
+            memcpy(id, val, sizeof(Value));
+            id->name = name;
+            i++;
+        }
+        visualize_variables();
+        Node **head = exist->func_block_head;
+        i = 0;
+        while (i < exist->func_block_len)
+        {
+            eval(head[i]);
+            i++;
+        }
+
+        exit(0);
+        // Value *exist = get_func();
+        break;
     }
     // operator
     case add_:
@@ -1592,10 +1771,10 @@ Value *eval(Node *node)
         }
         return (ret);
     }
-    case add_assign_:
-    case sub_assign_:
-    case mul_assign_:
-    case div_assign_:
+    case add_me:
+    case sub_me:
+    case mul_me:
+    case div_me:
     {
         Value *left = eval(node->left);
         Value *right = eval(node->right);
@@ -1608,19 +1787,19 @@ Value *eval(Node *node)
         if (left->type == number_ && right->type == number_)
         {
             long double number = 0.0;
-            if (node->token->type == add_assign_)
+            if (node->token->type == add_me)
                 number = left->number + right->number;
-            if (node->token->type == sub_assign_)
+            if (node->token->type == sub_me)
                 number = left->number - right->number;
-            if (node->token->type == mul_assign_)
+            if (node->token->type == mul_me)
                 number = left->number * right->number;
-            if (node->token->type == div_assign_)
+            if (node->token->type == div_me)
                 number = left->number / right->number;
             ret->is_float = left->is_float || right->is_float;
             ret->number = number;
             left->number = ret->number;
         }
-        else if (node->token->type == add_assign_ && left->type == characters_ && right->type == characters_)
+        else if (node->token->type == add_me && left->type == characters_ && right->type == characters_)
         {
             ret->type = left->is_char || right->is_char;
             ret->characters = calloc(ft_strlen(left->characters) + ft_strlen(right->characters) + 1, sizeof(char));
@@ -1628,7 +1807,7 @@ Value *eval(Node *node)
             ft_strcpy(ret->characters + ft_strlen(ret->characters), right->characters);
             left->characters = ret->characters;
         }
-        else if (node->token->type == add_assign_ && (left->type == array_ && right->type == array_))
+        else if (node->token->type == add_me && (left->type == array_ && right->type == array_))
         {
             ret->type = array_;
             ret->array_len = left->array_len + right->array_len;
@@ -1697,6 +1876,55 @@ Value *eval(Node *node)
         }
         break;
     }
+    case length_:
+    {
+        Value *left = eval(node->left);
+        if (left->type == identifier_)
+            ft_printf(err, "Undeclared variable '%s'\n", left->name);
+        Value *ret = calloc(1, sizeof(Value));
+        ret->type = number_;
+        if (left->type == characters_)
+            ret->number = (double)ft_strlen(left->characters);
+        else if (left->type == array_)
+            ret->number = left->array_len;
+        else
+            ft_printf(err, "data type '%t' has no attribute '%t'\n", left->type, length_);
+        return ret;
+        break;
+    }
+    case dot_:
+    {
+        Value *left = eval(node->left);
+        char *name = node->right->token->name;
+        if (left->type == identifier_)
+            ft_printf(err, "Undeclared variable '%s'\n", left->name);
+        // check that left is obj, if you check that right is idenitifier taht may cause error
+        // in case there is a variable with same name as this attribute
+        // ft_printf(out, "search for %s\n", name);
+        if (left->type == obj_)
+        {
+            int i = 0;
+            while (i < left->object_len)
+            {
+                if (strcmp(left->keys[i], name) == 0)
+                {
+                    ft_printf(out, "iterate return %v\n", left->object[i]);
+                    return left->object[i];
+                }
+                i++;
+            }
+        }
+        if (left->type == obj_)
+        {
+            if (left->name)
+                ft_printf(err, "Error: '%s' has no attribute '%s'\n", left->name, name);
+            else
+                ft_printf(err, "Error: OBJ has no attribute '%s'\n", name);
+        }
+        else
+            ft_printf(err, "Error: %t has no attribute '%s'\n", left->type, name);
+        break;
+    }
     case and_:
     case or_:
     {
@@ -1725,87 +1953,78 @@ Value *eval(Node *node)
         ret->type = boolean_;
         return (ret);
     }
-    case dot_:
+    case while_:
     {
-        Value *left = eval(node->left);
-        char *name = node->right->token->name;
-        if (left->type == identifier_)
-            ft_printf(err, "Undeclared variable '%s'\n", left->name);
-        if (left->type == obj_)
+        Node *head;
+        Node **block;
+        int condition = true;
+        head = node->token->conditions_head;
+        while (1)
         {
-            int i = 0;
-            while (i < left->object_len)
+            Value *res = eval(head);
+            // verify thta it should be boolean value
+            if (res->type == boolean_ && res->boolean == false)
             {
-                if (strcmp(left->keys[i], name) == 0)
-                {
-                    ft_printf(out, "iterate return %v\n", left->object[i]);
-                    return left->object[i];
-                }
-                i++;
+                condition = false;
+                break;
+            }
+            if (res->type != boolean_)
+                ft_printf(err, "Expected boolean value in whie loop\n");
+            if (condition == false)
+                break;
+            block = node->token->block_head;
+            int j = 0;
+            while (j < node->token->block_len)
+            {
+                eval(block[j]);
+                j++;
             }
         }
-        if (left->type == obj_)
-        {
-            if (left->name)
-                ft_printf(err, "Error: '%s' has no attribute '%s'\n", left->name, name);
-            else
-                ft_printf(err, "Error: OBJ has no attribute '%s'\n", name);
-        }
-        else
-            ft_printf(err, "Error: %t has no attribute '%s'\n", left->type, name);
         break;
     }
-    case len_:
+    case if_:
+    case elif_:
     {
-        Value *left = eval(node->left);
-        if (left->type == identifier_)
-            ft_printf(err, "Undeclared variable '%s'\n", left->name);
-        Value *ret = calloc(1, sizeof(Value));
-        ret->type = number_;
-        if (left->type == characters_)
-            ret->number = (double)ft_strlen(left->characters);
-        else if (left->type == array_)
-            ret->number = left->array_len;
-        else
-            ft_printf(err, "data type '%t' has no attribute '%t'\n", left->type, len_);
-        return ret;
-        break;
-    }
-    case output_:
-    {
-        Node **head = node->token->array_head;
-        int i = 0;
-        // ft_printf(out, "Call ouput and print %d value\n", node->token->array_len);
-        while (i < node->token->array_len)
-        {
-            output(eval(head[i]));
-            i++;
-        }
-        return (node->token);
-    }
-    case func_dec:
-    {
-        new_func(node->token);
-        break;
-    }
-    case func_call:
-    {
-        Value *func = node->token;
-        ft_printf(out, "call function %v\n", func);
-        Value *func_run = get_func(func->name);
+        Node *head;
+        Node **block;
 
-        Node **bloc_head = func_run->bloc_head;
-        int i = 0;
-        while (bloc_head[i])
+        head = node->token->conditions_head;
+        Value *res = eval(head);
+        // verify thta it should be boolean value
+        if (res->type == boolean_ && res->boolean == false)
         {
-            eval(bloc_head[i]);
+            if (node->token->elif_tk)
+                return (eval(node->token->elif_tk));
+            if (node->token->else_tk)
+                return (eval(node->token->else_tk));
+            ft_printf(out, "condition is false \n");
+            return res;
+        }
+
+        // block
+        block = node->token->block_head;
+        int i = 0;
+        while (i < node->token->block_len)
+        {
+            eval(block[i]);
             i++;
         }
-        break;
-        // exit(0);
+        return (node->token); // check
+    }
+    case else_:
+    {
+        ft_printf(out, "enter else\n");
+        Node **head = node->token->block_head;
+        int i = 0;
+        while (i < node->token->block_len)
+        {
+            eval(head[i]);
+            i++;
+        }
+        return (node->token); // check
     }
     default:
-        ft_printf(err, "Error: eval received unknown type '%t' \n", node->token->type);
+        ft_printf(err, "receive unknown type '%t' \n", node->token->type);
     }
     return NULL;
 }
@@ -1835,11 +2054,14 @@ int main(void)
 
     // start compilling
     if (DEBUG)
+    {
         ft_printf(out, "%s\n", text);
+        indexes();
+    }
     build_tokens();
-    tmp_tk = tk_pos + 1;
+    
     tk_pos = 0;
-    line = -1;
+
     execute();
     if (DEBUG)
         visualize_variables();

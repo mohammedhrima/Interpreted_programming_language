@@ -76,3 +76,12 @@ all the flowing operator should be handled:
         output("end 2nd statement") 
     output("end 1st statement")
 
+
+func hello(x, y ):
+    output("x: ",x,"\n")
+    output("y: ",y,"\n")
+    output("x + y: ", x + y,"\n")
+
+
+hello(1,2)
+

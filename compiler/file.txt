@@ -1,0 +1,5 @@
+x = 0
+func hello(x,y):
+    x = x + 1
+
+hello(1,2)
