@@ -1,5 +1,30 @@
 x = 0
-func hello(x,y):
-    x = x + 1
+y = 1
+z = 11
 
-hello(1,2)
+func test(a):
+    output("a in test is ", a, "\n")
+
+func hello(x,y):
+    output("before\n")
+    output("x in func is ", x, "\n")
+    output("y in func is ", y, "\n")
+    x = 22
+    y = 33
+    output("after\n")
+    output("x in func is ", x, "\n")
+    output("y in func is ", y, "\n")
+    test(z)
+
+
+
+
+hello(x,y)
+output("\n")
+output("x outside func is ", x, "\n")
+output("y outside func is ", y, "\n")
+
+hello(x,y)
+output("\n")
+output("x outside func is ", x, "\n")
+output("y outside func is ", y, "\n")

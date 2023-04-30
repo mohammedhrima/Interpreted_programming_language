@@ -115,7 +115,7 @@ struct Token
         // block
         struct
         {
-            Token **PREV_VARIABLES;
+            Token *PREV_VARIABLES;
             Token *VARIABLES[100];
             int var_index;
             Node **bloc_head;
@@ -1319,18 +1319,11 @@ Node *prime()
 // Evaluate
 Token *get_var(char *name)
 {
-    for (int i = 0; CURR_VARIABLES[i]; i++)
+    for (int i = 0; i < (*curr_var_index); i++)
     {
         if (ft_strcmp(CURR_VARIABLES[i]->name, name) == 0)
         {
             return (CURR_VARIABLES[i]);
-        }
-    }
-    for (int i = 0; VARIABLES[i]; i++)
-    {
-        if (ft_strcmp(VARIABLES[i]->name, name) == 0)
-        {
-            return (VARIABLES[i]);
         }
     }
     return NULL;
@@ -1338,6 +1331,7 @@ Token *get_var(char *name)
 
 Token *new_variable(Token *var)
 {
+
     CURR_VARIABLES[(*curr_var_index)++] = var;
     return (var);
 }
@@ -1809,7 +1803,6 @@ Value *eval(Node *node)
         Value *func_dec = new_func(node->token);
         ft_printf(out, "declare function with %d variable \n", node->left->token->array_len);
         func_dec->var_index = 0;
-        func_dec->PREV_VARIABLES = CURR_VARIABLES;
         CURR_VARIABLES = func_dec->VARIABLES;
         curr_var_index = &func_dec->var_index;
         int i = 0;
@@ -1844,7 +1837,9 @@ Value *eval(Node *node)
         {
             char *name = CURR_VARIABLES[i]->name;
             memcpy(CURR_VARIABLES[i], params->array[i], sizeof(Token));
+            // CURR_VARIABLES[i] = params->array[i];
             CURR_VARIABLES[i]->name = name;
+            ft_printf(out, " >> %v\n", CURR_VARIABLES[i]);
             i++;
         }
         // call function
@@ -1858,6 +1853,7 @@ Value *eval(Node *node)
         // reset setting
         CURR_VARIABLES = VARIABLES;
         curr_var_index = &var_index;
+
         break;
     }
     default:
@@ -1877,8 +1873,6 @@ void execute()
 
 int main(void)
 {
-    // VARIABLES[0]->PREV_VARIABLES;
-    // exit(0);
     FILE *fp = NULL;
     long file_size = 0;
 
