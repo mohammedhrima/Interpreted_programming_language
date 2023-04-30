@@ -29,7 +29,9 @@ typedef enum
     error_,
     eof_,
     identifier_,
-    // param_,
+    break_,
+    continue_,
+    return_,
     characters_,
     boolean_,
     number_,
@@ -85,7 +87,6 @@ struct Token
     union
     {
         // used when building Token
-
         struct
         {
             long double number; // integer, float
@@ -120,17 +121,6 @@ struct Token
             int var_index;
             Node **bloc_head;
         };
-        int len;
-        // functions_
-        // struct
-        // {
-        //     Node **params_head;
-        //     int params_len;
-        //     Node **func_block_head;
-        //     int func_block_len;
-        //     Token *FUNC_VARIABLES[500];
-        //     int func_var_index;
-        // };
     };
 };
 // alpha tokens
@@ -156,6 +146,9 @@ struct
     {"is", equal_},
     {"not", not_},
     {"len", len_},
+    {"break", break_},
+    {"continue", continue_},
+    {"return", return_},
     {0, 0},
 };
 
@@ -516,7 +509,7 @@ void output(Token *token)
         switch (token->type)
         {
         case identifier_:
-            ft_printf(err, "Undeclared variable '%s'\n", token->name);
+            ft_printf(err, "Undeclared variable '%s' in output\n", token->name);
         // case params_:
         //     ft_printf(out, "Parameter with name '%s'\n", token->name);
         //     break;
@@ -702,6 +695,9 @@ char *type_to_string(int type)
         {"MUL ASSIGN", mul_assign_},
         {"DOT", dot_},
         {"LEN", len_},
+        {"BREAK", break_},
+        {"CONTINUE", continue_},
+        {"RETURN", return_},
         {0, 0},
     };
     for (int i = 0; Types[i].string; i++)
@@ -938,7 +934,29 @@ Node **bloc(int lvl) // expected level
 
 Node *expr()
 {
-    return function();
+    return assign();
+}
+
+
+
+int is_assign(Type type)
+{
+    return (type == assign_ || type == add_assign_ || type == mul_assign_ || type == div_assign_);
+}
+
+// = += -= *= /=
+Node *assign()
+{
+    Node *left = function();
+    if (is_assign(tokens[tk_pos]->type))
+    {
+        Node *node = new_node(tokens[tk_pos]);
+        skip(tokens[tk_pos]->type);
+        node->left = left;
+        node->right = function();
+        left = node;
+    }
+    return left;
 }
 
 // functions
@@ -964,6 +982,7 @@ Node *function()
             ft_printf(err, "Error: Expected tuple after functions declaration\n");
         // node->right; //code block
         node->token->bloc_head = bloc(func_level + 1);
+
         return node;
     }
     if (tokens[tk_pos]->type == output_)
@@ -991,27 +1010,16 @@ Node *function()
         left->token->array_len = len;
         return left;
     }
-    return (assign());
-}
-
-int is_assign(Type type)
-{
-    return (type == assign_ || type == add_assign_ || type == mul_assign_ || type == div_assign_);
-}
-
-// = += -= *= /=
-Node *assign()
-{
-    Node *left = tenary();
-    if (is_assign(tokens[tk_pos]->type))
+    if (tokens[tk_pos]->type == return_)
     {
-        Node *node = new_node(tokens[tk_pos]);
+        Node *new = new_node(tokens[tk_pos]);
         skip(tokens[tk_pos]->type);
-        node->left = left;
-        node->right = tenary();
-        left = node;
+        ft_printf(out, "found return \n");
+        new->left = expr();
+        // exit(0);
+        return (new);
     }
-    return left;
+    return (tenary());
 }
 
 // while, if, elif, else
@@ -1214,7 +1222,7 @@ Node *iteration()
 
 int is_prime(Type type)
 {
-    return (type == identifier_ /*|| type == param_*/ || type == number_ || type == characters_ || type == boolean_);
+    return (type == identifier_ || type == number_ || type == characters_ || type == boolean_ || type == break_ || type == continue_);
 }
 
 Node *prime()
@@ -1434,18 +1442,12 @@ Value *eval(Node *node)
         else
             return (new_variable(node->token));
     }
-    // case param_:
-    // {
-    //     // add VARIABLES for each functions
-    //     return (node->token);
-    // }
-    // values
     case number_:
     case characters_:
     case boolean_:
-    {
+    case break_:
+    case continue_:
         return (node->token);
-    }
     case tuple_:
     case array_:
     {
@@ -1514,6 +1516,7 @@ Value *eval(Node *node)
     case elif_:
     {
         Value *condition = eval(node->left);
+        Value *ret = NULL;
         if (condition->type != boolean_)
             ft_printf(err, "Error in if_ elif_, exepected boolean value\n");
         if (condition->boolean)
@@ -1522,13 +1525,13 @@ Value *eval(Node *node)
             int i = 0;
             while (bloc_head[i])
             {
-                eval(bloc_head[i]);
+                ret = eval(bloc_head[i]);
                 i++;
             }
         }
         else
-            eval(node->right);
-        return (condition); // to be verified
+            ret = eval(node->right);
+        return (ret); // to be verified
     }
     case else_:
     {
@@ -1552,9 +1555,18 @@ Value *eval(Node *node)
             int i = 0;
             while (bloc_head[i])
             {
-                eval(bloc_head[i]);
+                Value *ret = eval(bloc_head[i]);
+                if (ret && ret->type == break_)
+                {
+                    condition->boolean = false;
+                    break;
+                }
+                if (ret && ret->type == continue_)
+                    break;
                 i++;
             }
+            if (condition->boolean == false)
+                break;
             condition = eval(node->left);
         }
         return (condition); // to be verified
@@ -1568,9 +1580,9 @@ Value *eval(Node *node)
         Value *left = eval(node->left);
         Value *right = eval(node->right);
         if (left->type == identifier_)
-            ft_printf(err, "Undeclared variable '%s'\n", left->name);
+            ft_printf(err, "Undeclared variable '%s' in operator 1\n", left->name);
         if (right->type == identifier_)
-            ft_printf(err, "Undeclared variable '%s'\n", right->name);
+            ft_printf(err, "Undeclared variable '%s' in operator 2\n", right->name);
         Value *ret = calloc(1, sizeof(Value));
         if (left->type == number_ && right->type == number_)
         {
@@ -1621,9 +1633,9 @@ Value *eval(Node *node)
         Value *left = eval(node->left);
         Value *right = eval(node->right);
         if (left->type == identifier_)
-            ft_printf(err, "Undeclared variable '%s'\n", left->name);
+            ft_printf(err, "Undeclared variable '%s' operator 3\n", left->name);
         if (right->type == identifier_)
-            ft_printf(err, "Undeclared variable '%s'\n", right->name);
+            ft_printf(err, "Undeclared variable '%s' operator 4\n", right->name);
         Value *ret = calloc(1, sizeof(Value));
         ft_printf(out, "do %t between %v and %v\n", node->token->type, left, right);
         if (left->type == number_ && right->type == number_)
@@ -1674,9 +1686,9 @@ Value *eval(Node *node)
         Value *left = eval(node->left);
         Value *right = eval(node->right);
         if (left->type == identifier_)
-            ft_printf(err, "Undeclared variable '%s'\n", left->name);
+            ft_printf(err, "Undeclared variable '%s' in comparision 1\n", left->name);
         if (right->type == identifier_)
-            ft_printf(err, "Undeclared variable '%s'\n", right->name);
+            ft_printf(err, "Undeclared variable '%s' in comparision 2\n", right->name);
         Value *ret = calloc(1, sizeof(Value));
         if (left->type == number_ && right->type == number_)
         {
@@ -1830,6 +1842,7 @@ Value *eval(Node *node)
     {
         // get func_run
         Value *func_run = get_func(node->token->name);
+        Value *ret = NULL;
         ft_printf(out, "func: %v\n", func_run);
 
         // get params from fun_call
@@ -1852,7 +1865,19 @@ Value *eval(Node *node)
         i = 0;
         while (bloc_head[i])
         {
-            eval(bloc_head[i]);
+            if(bloc_head[i]->token->type == return_)
+            {
+                // ft_printf(out, "found return in func_call -> %v\n", eval(bloc_head[i]->left));
+                // exit(0);
+                return(eval(bloc_head[i]->left));
+            }
+            Value *ret = eval(bloc_head[i]);
+            ft_printf(out, "ret -> %v\n",ret);
+            // if (ret && ret->type == return_)
+            // {
+            //     ft_printf(out, "return from function\n");
+            //     exit(0);
+            // }
             i++;
         }
         // reset setting
@@ -1877,8 +1902,6 @@ void execute()
 
 int main(void)
 {
-    // VARIABLES[0]->PREV_VARIABLES;
-    // exit(0);
     FILE *fp = NULL;
     long file_size = 0;
 

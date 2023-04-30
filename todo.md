@@ -8,10 +8,11 @@
 7- output function
 8- if statement:
 9- while loop:
+11- pass, break, continue keyword
 
 10- functins declaration, params, return
 
-11- pass, break, continue keyword
+
 12- add attributes for all data types
 13- when you get here, plan for next steps
 14- improve error handling
