@@ -4,7 +4,7 @@
 OS=$(uname)
 # Check if the operating system is macOS
 if [[ "$OS" == "Darwin" ]]; then
-    gcc -fsanitize=address -fsanitize=null -g3 -O2 compiler.c -o exe && ./exe
+    gcc -fsanitize=address -fsanitize=null -g3 -O2 compiler.c -o exe && ./exe $1
     rm -rf exe
 # Check if the operating system is Ubuntu
 elif [[ "$OS" == "Linux" ]] && grep -q "Ubuntu" /etc/os-release; then
