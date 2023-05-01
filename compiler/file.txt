@@ -1,0 +1,5 @@
+student = {
+    name: "mohammed",
+    age: 10
+}
+x = student.name

@@ -1255,7 +1255,7 @@ Node *prime()
     if (tokens[exe_pos]->type == identifier_)
     {
         Node *node = new_node(tokens[exe_pos]);
-        left = node;
+
         skip(identifier_);
         if (tokens[exe_pos]->type == lparent_)
         {
@@ -1284,7 +1284,6 @@ Node *prime()
             // left = node;
         }
         // else , I commented it because I can iterate over function
-#if 0
         while (check(tokens[exe_pos]->type, lbracket_, attribute_, 0))
         {
             // left will be element to iterate over it
@@ -1305,10 +1304,6 @@ Node *prime()
                 skip(attribute_);
                 node->left = left;     // element to iterate over it
                 node->right = prime(); // expect identifier, indexof ...
-                ft_printf(out, "left: %v\nright: %v\n", node->left->token, node->right->token);
-                left = node;
-                // ft_printf(out, "left: %v\nright: %v\n", node->left->token, node->right->token);
-                // exit(0);
                 /*
                 if is indexof give it who you are on left !!!
                 oooor do a smart move and handle it in evaluating
@@ -1318,19 +1313,9 @@ Node *prime()
                 */
                 // left = node;
             }
-#endif
-        while (tokens[exe_pos]->type == attribute_)
-        {
-            node = new_node(tokens[exe_pos]);
-            skip(attribute_);
-            node->left = left;     // element to iterate over it
-            node->right = prime(); // expect identifier, indexof ...
-            ft_printf(out, "left: %v\nright: %v\n", node->left->token, node->right->token);
-            left = node;
         }
-        // exit(0);
 
-        return left;
+        return node;
     }
     // indexof
     if (tokens[exe_pos]->type == indexof_)
@@ -1456,43 +1441,7 @@ Node *prime()
     {
         node = new_node(tokens[exe_pos]);
         skip(tokens[exe_pos]->type);
-#if 0
-        // try to iterate over string even if it's not define somewhere
-        // else , I commented it because I can iterate over function
-        while (check(tokens[exe_pos]->type, lbracket_, attribute_, 0))
-        {
-            // left will be element to iterate over it
-            // right element to iterate with it
-            if (tokens[exe_pos]->type == lbracket_)
-            {
-                node = new_node(tokens[exe_pos]);
-                skip(lbracket_);
-                node->token->type = iteration_;
-                node->left = left;    // element to iterate over it
-                node->right = expr(); // index (number) , I'm thinking about using words also like javascript does
-                skip(rbracket_);
-                left = node;
-            }
-            if (tokens[exe_pos]->type == attribute_)
-            {
-                node = new_node(tokens[exe_pos]);
-                skip(attribute_);
-                node->left = left;     // element to iterate over it
-                node->right = prime(); // expect identifier, indexof ...
-                left = node;
-                fT_printf(out, "left: %v\nright: %v\n", node->left, node->right);
-                exit(0);
-                /*
-                if is indexof give it who you are on left !!!
-                oooor do a smart move and handle it in evaluating
-                check if right key is index of
-                then check you data type and left of indexof
-                and do your magic
-                */
-                // left = node;
-            }
-        }
-#endif
+
         return node;
     }
     // if (tokens[exe_pos]->type == inc_ || tokens[exe_pos]->type == dec_)
@@ -2036,67 +1985,6 @@ Value *evaluate(Node *node)
         visualize_variables();
         exit_current_scoop();
         // exit(0);
-        break;
-    }
-    case attribute_:
-    {
-        // len, isnumber, isalpha, indexof ...
-        Value *left = evaluate(node->left); // variable
-        Value *right = evaluate(node->right);
-
-        ft_printf(out, "left: %v\nright: %v\n", left, right);
-
-        if (left->type == identifier_)
-            ft_printf(err, "Undeclared variable '%s'\n", left->name);
-        if (right->type == type_)
-        {
-            Value *ret = calloc(1, sizeof(Value));
-            ret->type = type_;
-            ret->value_type = left->type;
-            return ret;
-        }
-        if (left->type == obj_)
-        {
-            char *name = node->right->token->name;
-            if (name == NULL) // to be verifyed everytime getting here
-                ft_printf(err, "%s has no attribute %s\n", left->name, right->name);
-            int i = 0;
-            while (left->keys && left->keys[i])
-            {
-                if (strcmp(left->keys[i], name) == 0)
-                {
-                    ft_printf(out, "iterate return %v\n", left->object[i]);
-                    left = left->object[i];
-                    break;
-                }
-                i++;
-            }
-            // if (left->name)
-            //     ft_printf(err, "Error: '%s' has no attribute '%s'\n", left->name, name);
-            // else
-            // ft_printf(err, "Error: OBJ has no attribute '%s'\n", name);
-        }
-        // for characters, arrays
-        if (ft_strcmp(right->name, "len") == 0)
-        {
-            Value *ret = calloc(1, sizeof(Value));
-            ret->type = number_;
-            if (left->type == characters_)
-            {
-                ret->number = (double)ft_strlen(left->characters);
-                return ret;
-            }
-            else if (left->type == array_)
-            {
-                long i = 0;
-                while (left->array && left->array[i])
-                    i++;
-                ret->number = i;
-                return ret;
-            }
-            else
-                ft_printf(err, "%s has no attribute %t -> %s\n", left->name, right->type, right->name);
-        }
         break;
     }
     default:

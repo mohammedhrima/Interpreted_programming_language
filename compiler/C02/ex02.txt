@@ -1,0 +1,4 @@
+
+str = "abc"
+res = str.isalpha
+output(res)

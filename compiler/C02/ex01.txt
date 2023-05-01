@@ -1,0 +1,12 @@
+func ft_strcpy(dest, src, n):
+    i = 0
+
+    while i < src.len and i < dest.len and i < n:
+        dest[i] = src[i]
+        i += 1
+    if i < src.len and i < n:
+        dest = dest + src[i]
+    return dest
+
+res = ft_strcpy("abcdefgh","123456", 5)
+output("res: ",res, "\n") 

@@ -1,0 +1,8 @@
+func operation(x):
+    if x == 1:
+        return x
+    return 5
+
+
+operation(2)
+//output(y,"\n")

@@ -4,13 +4,17 @@
 OS=$(uname)
 # Check if the operating system is macOS
 if [[ "$OS" == "Darwin" ]]; then
-    gcc -fsanitize=address -fsanitize=null -g3 -O2 compiler.c -o exe && ./exe $1
-    rm -rf exe
+    # if [[ compiler.c -nt exe ]]; then
+      gcc -fsanitize=address -fsanitize=null -g3 -O2 compiler.c -o exe && ./exe $1
+    # fi
+      # ./exe $1
 # Check if the operating system is Ubuntu
 elif [[ "$OS" == "Linux" ]] && grep -q "Ubuntu" /etc/os-release; then
     export LSAN_OPTIONS=detect_leaks=0
-    gcc -fsanitize=address -fsanitize=null -g3 -lm -O2 compiler.c  -o exe && ./exe
-    rm -rf exe
+    if [[ compiler.c -nt exe ]]; then
+      gcc -Wall -Werror -Wextra -fsanitize=address -fsanitize=null -g3 -O2 compiler.c -o exe && ./exe $1
+    fi
+      ./exe $1
 else
     echo "Unsupported operating system: $OS"
     exit 1

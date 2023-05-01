@@ -8,14 +8,38 @@
 7- output function
 8- if statement:
 9- while loop:
-11- pass, break, continue keyword
-
+11- break, continue keyword
 10- functins declaration, params, return
 
 
+"""
+every time I call function:
+    VARIABLES
+level 0:
+    init function params
++ fix error :
+    - iteration with identifier
+        + iteration should work on object, and arrays, and all data types
++ make functions similar to those in Libft
++ Error handling
++ add type as data type
+    + type:
+        is number handle type str.data.type
++ verify object
+
+"""
+
+
+
+
+
+
+14 - add "type" as data type
+15- "in" key word 
 12- add attributes for all data types
 13- when you get here, plan for next steps
 14- improve error handling
+16 - input
 
 functions(parm1, param2) ...
 functions returns

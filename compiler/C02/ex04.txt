@@ -1,0 +1,4 @@
+str = "12345"
+res = str.isalpha
+
+output(res, "\n")
