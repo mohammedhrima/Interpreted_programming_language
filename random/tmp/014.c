@@ -1523,8 +1523,8 @@ Token *new_variable(Token *var)
 Token *get_var(char *name)
 {
     int curr_level = var_level;
-    // while (curr_level >= 0)
-    // {
+    while (curr_level >= 0)
+    {
         // ft_printf(out, "level %d \n", curr_level);
         for (int i = 0; VARIABLES_LEVELS[curr_level].VARIABLES[i]; i++)
         {
@@ -1534,8 +1534,8 @@ Token *get_var(char *name)
                 return (VARIABLES_LEVELS[curr_level].VARIABLES[i]);
             }
         }
-        // curr_level--;
-    // }
+        curr_level--;
+    }
     return NULL;
 }
 
@@ -1973,7 +1973,7 @@ Value *evaluate(Node *node)
         // this step is only to check if there is error inside fucntion
         ft_printf(out, "eval func_dec\n");
         Node *func_dec = new_func(node);
-        // access_next_scoop();
+        access_next_scoop();
         int i = 0;
         Node **params = node->left->token->array_head;
         while (params[i])
@@ -1997,7 +1997,7 @@ Value *evaluate(Node *node)
         //     i++;
         // }
         // visualize_variables();
-        // exit_current_scoop();
+        exit_current_scoop();
         break;
     }
     case func_call:

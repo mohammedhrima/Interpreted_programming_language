@@ -1,5 +1,13 @@
-student = {
-    name: "mohammed",
-    age: 10
-}
-x = student.name
+
+
+func num(n):
+    if n > 1:
+        return n * num(n - 1)
+    else:
+        return 1
+
+o = num(3)
+
+output("num: ", o, "\n" )
+
+
