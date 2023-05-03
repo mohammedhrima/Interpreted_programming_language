@@ -12,7 +12,7 @@
 #define in STDIN_FILENO
 #define out STDOUT_FILENO
 #define err STDERR_FILENO
-#define DEBUG true
+#define DEBUG false
 
 // typedefs
 typedef struct Node Node;
@@ -121,6 +121,7 @@ struct Token
         {
             Node **array_head;
             Token **array; // end it with NULL ptr
+            int array_len;
         };
         // object
         struct
@@ -1282,6 +1283,7 @@ Node *prime()
             params[i] = NULL;
             skip(rparent_);
             node->left->token->array_head = params;
+            node->left->token->array_len = i;
             left = node;
 
             // left = node;
@@ -1520,21 +1522,28 @@ Token *new_variable(Token *var)
     return (var);
 }
 
+int func = 0;
 Token *get_var(char *name)
 {
     int curr_level = var_level;
-    // while (curr_level >= 0)
-    // {
-        // ft_printf(out, "level %d \n", curr_level);
-        for (int i = 0; VARIABLES_LEVELS[curr_level].VARIABLES[i]; i++)
+    for (int i = 0; VARIABLES_LEVELS[curr_level].VARIABLES[i]; i++)
+    {
+        if (ft_strcmp(VARIABLES_LEVELS[curr_level].VARIABLES[i]->name, name) == 0)
         {
-            if (ft_strcmp(VARIABLES_LEVELS[curr_level].VARIABLES[i]->name, name) == 0)
+            ft_printf(out, "found in level %d\n", curr_level);
+            if (func)
             {
-                ft_printf(out, "found in level %d\n", curr_level);
+                Token *res = calloc(1, sizeof(Token));
+                memcpy(res, VARIABLES_LEVELS[curr_level].VARIABLES[i], sizeof(Token));
+                return res;
+            }
+            else
+            {
                 return (VARIABLES_LEVELS[curr_level].VARIABLES[i]);
             }
         }
-        // curr_level--;
+    }
+    // curr_level--;
     // }
     return NULL;
 }
@@ -1974,17 +1983,17 @@ Value *evaluate(Node *node)
         ft_printf(out, "eval func_dec\n");
         Node *func_dec = new_func(node);
         // access_next_scoop();
-        int i = 0;
-        Node **params = node->left->token->array_head;
-        while (params[i])
-        {
-            if (params[i]->token->type != identifier_)
-                ft_printf(err, "Error in function declaration\n");
-            new_variable(params[i]->token);
-            // ft_printf(out, "===> %v\n", x);
-            i++;
-        }
-        ft_printf(out, "after getting params -> %d\n", i);
+        // int i = 0;
+        // Node **params = node->left->token->array_head;
+        // while (params[i])
+        // {
+        //     if (params[i]->token->type != identifier_)
+        //         ft_printf(err, "Error in function declaration\n");
+        //     new_variable(params[i]->token);
+        //     // ft_printf(out, "===> %v\n", x);
+        //     i++;
+        // }
+        // ft_printf(out, "after getting params -> %d\n", i);
 
         // code bloc
         // Node **bloc = func_dec->token->bloc_head;
@@ -2002,40 +2011,45 @@ Value *evaluate(Node *node)
     }
     case func_call:
     {
+        // try create copy of function instead
+        access_next_scoop();
+        // build a copy for the full function
         ft_printf(out, "call function %s\n", node->token->name);
         // find function
         Node *existed_func = get_func(node->token->name);
-
-        Node **existed_params = existed_func->left->token->array_head;
-        Node **new_params = node->left->token->array_head;
-        // access next scoop
-        // access_next_scoop();
-        // evaluate params of original function, and set hem to those in call
         int i = 0;
-        while (existed_params[i])
+#if 1
+        Node **existed_params = existed_func->left->token->array_head;
+#else
+        i = 0;
+        while (existed_func->left->token->array_head[i])
+            i++;
+
+        Node **existed_params = calloc(i + 1, sizeof(Node *));
+        i = 0;
+        while (existed_func->left->token->array_head[i])
         {
-            // if (existed_params[i]->token->type != identifier_)
-            // ft_printf(err, "Error in function call\n");
-            new_variable(existed_params[i]->token);
-            // ft_printf(out, "===> %v\n", x);
+            existed_params[i] = calloc(1, sizeof(Node *));
+            memcpy(existed_params[i], existed_func->left->token->array_head[i], sizeof(Node *));
             i++;
         }
+#endif
+        Node **new_params = node->left->token->array_head;
+        // access next scoop
+        // evaluate params of original function, and set hem to those in call
         i = 0;
-        while (new_params[i])
+        func = 1;
+        while (existed_params[i])
         {
-            ft_printf(out, "assign\n        %v\nto\n          %v\n", existed_params[i]->token, evaluate(new_params[i]), sizeof(Token));
-            char *name = existed_params[i]->token->name;
-            
-            // if(new_params[i]->token->type == identifier_)
-            
-            memcpy(existed_params[i]->token, evaluate(new_params[i]), sizeof(Token));
-            existed_params[i]->token->name = name;
-            // ft_printf(out, "===> %v\n", x);
+
+            Token *value = new_variable(existed_params[i]->token);
+            char *name = value->name;
+            memcpy(value, evaluate(new_params[i]), sizeof(Token));
+            value->name = name;
             i++;
         }
 
         // also check number of params
-
         // start evaluating bloc
         Node **bloc = existed_func->token->bloc_head;
         Value *x = NULL;
@@ -2045,10 +2059,10 @@ Value *evaluate(Node *node)
             x = evaluate(bloc[i]);
             i++;
         }
-        return x;
+        func = 0;
         visualize_variables();
-        // exit_current_scoop();
-        // exit(0);
+        exit_current_scoop();
+        return x;
         break;
     }
     case return_:

@@ -2045,10 +2045,10 @@ Value *evaluate(Node *node)
             x = evaluate(bloc[i]);
             i++;
         }
-        return x;
         visualize_variables();
         // exit_current_scoop();
         // exit(0);
+        return x;
         break;
     }
     case return_:

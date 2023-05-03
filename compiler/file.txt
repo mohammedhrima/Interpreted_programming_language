@@ -1,4 +1,6 @@
 
+func num2(m):
+    return m
 
 func num(n):
     if n > 1:
@@ -6,8 +8,11 @@ func num(n):
     else:
         return 1
 
-o = num(3)
-
+o = num(4)
 output("num: ", o, "\n" )
+o = num2(3)
+output("num: ", o, "\n" )
+
+
 
 
