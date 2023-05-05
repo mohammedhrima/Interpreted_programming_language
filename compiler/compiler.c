@@ -438,7 +438,7 @@ void ft_printf(int fd, char *fmt, ...)
                         }
                         if (token->line >= 0)
                             ft_printf(out, " in line [%d]", token->line);
-                        // ft_printf(out, ", in column [%d]", token->column);
+                        ft_printf(out, ", in column [%d]", token->column);
                         ft_printf(out, ", in level [%d]", token->level);
                     }
                     else
@@ -624,6 +624,7 @@ void build_tokens()
         }
         if (ft_strncmp(text + txt_pos, tab_space, ft_strlen(tab_space)) == 0)
         {
+            ft_printf(out, "found tab\n");
             column++;
             text += ft_strlen(tab_space);
             continue;
@@ -726,9 +727,10 @@ Node *sign();           // sign  -
 Node *prime();          // primary
 
 // bloc
-Node **bloc(int lvl) // expected level
+Node **bloc(int column) // expected level
 {
-    if (tokens[exe_pos]->column < lvl)
+    // exit(0);
+    if (tokens[exe_pos]->column < column)
         ft_printf(err, "Expected tab\n");
     int len = 0;
 
@@ -736,13 +738,24 @@ Node **bloc(int lvl) // expected level
     list[len] = expr();
     len++;
     list = realloc(list, (len + 1) * sizeof(Node *));
-    while (tokens[exe_pos]->type != eof_ && tokens[exe_pos]->column == lvl)
+    while (tokens[exe_pos]->type != eof_ && tokens[exe_pos]->column == column)
     {
+        usleep(5000);
+        ft_printf(out, "bloc column %d, in exe_pos %d, wich is %k\n", tokens[exe_pos]->column, exe_pos, tokens[exe_pos]);
+        // if(tokens[exe_pos]->type == return_)
+        // {
+        //     // ft_printf(out, "found return in bloc\n");
+        //     list[len] = new_node(tokens[exe_pos]);
+        //     len++;
+        //     list = realloc(list, (len + 1) * sizeof(Node *));
+        // }
         list[len] = expr();
+        // skip(list[len]->token->type);
         len++;
         list = realloc(list, (len + 1) * sizeof(Node *));
     }
     list[len] = NULL;
+    // exit(0);
     return list;
 }
 
@@ -768,6 +781,7 @@ Node *expr()
 // = += -= *= /= %=
 Node *assign()
 {
+
     Node *left = conditions();
     if (check(tokens[exe_pos]->type, assign_, add_assign_, sub_assign_, mul_assign_, div_assign_, mod_assign_, 0))
     {
@@ -778,6 +792,13 @@ Node *assign()
         node->right = conditions();
         ft_printf(out, "right type: %k\n", node->right->token);
         left = node;
+    }
+    if (check(tokens[exe_pos]->type, return_, 0))
+    {
+        skip(return_);
+        ft_printf(out, "found return\n");
+        // exe_pos++;
+    //    exit(0);
     }
     return left;
 }
@@ -970,7 +991,10 @@ Node *prime()
         // expect :
         skip(dots_);
         // current is bloc of code to execute
+        // ft_printf(out, "found bloc %t\n", tokens[exe_pos]->type);
+        // exit(0);
         node->token->bloc_head = bloc(curr_level + 1);
+        // exit(0);
         return node;
     }
     // parentheses
@@ -1190,6 +1214,7 @@ Node *prime()
         }
         return left;
     }
+    
     return NULL;
 }
 
@@ -1541,6 +1566,10 @@ Value *evaluate(Node *node)
             int i = 0;
             while (bloc_head[i])
             {
+                if(bloc_head[i]->token->type == return_){
+                    ft_printf(out, "found return\n");
+                    exit(0);
+                }
                 ret = evaluate(bloc_head[i]);
                 i++;
             }
@@ -1556,25 +1585,16 @@ Value *evaluate(Node *node)
         Node **bloc_head = node->token->bloc_head;
         Value *ret = NULL;
         int i = 0;
-        while (bloc_head[i])
-        {
-            ret = evaluate(bloc_head[i]);
-            i++;
-        }
+         while (bloc_head[i])
+            {
+                if(bloc_head[i]->token->type == return_){
+                    ft_printf(out, "found return\n");
+                    exit(0);
+                }
+                ret = evaluate(bloc_head[i]);
+                i++;
+            }
         ft_printf(out, "else return %v\n", ret);
-        return (ret);
-    }
-    case return_:
-    {
-        Node **bloc_head = node->token->bloc_head;
-        Value *ret = NULL;
-        int i = 0;
-        while (bloc_head[i])
-        {
-           ret = evaluate(bloc_head[i]);
-            i++;
-        }
-        ft_printf(out, "return return %v\n", ret);
         return (ret);
     }
     case while_:
@@ -1751,12 +1771,11 @@ Value *evaluate(Node *node)
         Value *res = NULL;
         i = 0;
         while (bloc[i])
-        {
-            if (bloc[i]->token->type == return_)
+        {    
+            if(bloc[i]->token->type == return_)
             {
-                res = evaluate(bloc[i]);
-                ft_printf(err, "found return -> %v\n", res);
-                break;
+                ft_printf(out, "found return\n");
+                exit(0);
             }
             res = evaluate(bloc[i]);
             i++;
