@@ -64,7 +64,6 @@ struct Token
     Type type;
     int column;
     int line;
-    int level;
     union
     {
         // number
@@ -438,8 +437,7 @@ void ft_printf(int fd, char *fmt, ...)
                         }
                         if (token->line >= 0)
                             ft_printf(out, " in line [%d]", token->line);
-                        // ft_printf(out, ", in column [%d]", token->column);
-                        ft_printf(out, ", in level [%d]", token->level);
+                        ft_printf(out, ", in level [%d]", token->column);
                     }
                     else
                         ft_putstr(fd, "(null token)");
@@ -517,7 +515,6 @@ int tk_pos;
 int line = 1;
 int column;
 int start;
-int level;
 
 Token *new_token(Type type)
 {
@@ -1213,7 +1210,6 @@ void access_next_scoop()
     list *tmp = current;
     current = current->next;
     current->prev = tmp;
-    level++;   
 }
 // free memory here, buuuuut be carefull
 void exit_current_scoop()
@@ -1222,7 +1218,6 @@ void exit_current_scoop()
     if(current->prev == NULL)
         ft_printf(err, "Error in exiting level\n");
     current = current->prev;
-    level--;
 }
 
 Token *new_variable(Token *var)
@@ -1231,31 +1226,24 @@ Token *new_variable(Token *var)
     //     current = calloc(1, sizeof(list));
     ft_printf(out, "index: %d\n", current->index);
     current->variables[current->index] = var;
-    var->level = level;
     current->index++;
     return (var);
 }
 
-list *tmp;
 Token *get_var(char *name)
 {
-    ft_printf(out, "get %s from level %d\n",name, level);
-      visualize_variables();
+    list *tmp;
+
     tmp = current;
     while(tmp)
     {
-        for(int i = tmp->index - 1; i >= 0; i--)
+        for(int i = 0; tmp->variables[i]; i++)
         {
             if(ft_strcmp(tmp->variables[i]->name, name) == 0)
-            {
-                ft_printf(out, "return %v\n",tmp->variables[i] );
-
                 return tmp->variables[i];
-            }
         }
         tmp = tmp->prev;
     }
-    ft_printf(out, "not found\n");
     return NULL;
 }
 
@@ -1707,7 +1695,7 @@ Value *evaluate(Node *node)
     }
     case func_call_:
     {
-       
+        access_next_scoop();
 
         // build a copy for the full function
         ft_printf(out, "call function %s\n", node->token->name);
@@ -1720,33 +1708,16 @@ Value *evaluate(Node *node)
         // access next scoop
         // evaluate params of original function, and set hem to those in call
         int i = 0;
-        access_next_scoop();
         while (existed_params[i])
         {
-            // ft_printf(out, "old -> ")
-            
-            Token *value = evaluate(new_params[i]);
-            // ft_putstr(out, "\033[31m");
-            // ft_printf(out, "value: %v\n", value);
-            // ft_putstr(out, "\033[0m");
-
-            // Token *old = new_variable(existed_params[i]->token);
-            // char *name = old->name;
-            // *old =  *value;
-            value->name = existed_params[i]->token->name;
-            new_variable(value);
-            // old->name = name;
-            // ft_putstr(out, "\033[31m");
-            // ft_printf(out, "old: %v\n", value);
-            // ft_putstr(out, "\033[0m");
+            Token *value = new_variable(existed_params[i]->token);
+            char *name = value->name;
+            memcpy(value, evaluate(new_params[i]), sizeof(Token));
+            value->name = name;
             i++;
         }
-        visualize_variables();
-        // exit_current_scoop();
-        // exit(0);
         // also check number of params
         // start evaluating bloc
-        // access_next_scoop();
         Node **bloc = existed_func->token->bloc_head;
         Value *res = NULL;
         i = 0;

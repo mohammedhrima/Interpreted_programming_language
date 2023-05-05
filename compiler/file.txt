@@ -1,18 +1,10 @@
+x = 0
+i = 3
+func hi(n):
+    output("\nn is big\n")
+    if n > 0:
+        hi(n - 1)
 
-func num2(m):
-    return m
+    
 
-func num(n):
-    if n > 1:
-        return n * num(n - 1)
-    else:
-        return 1
-
-o = num(4)
-output("num: ", o, "\n" )
-o = num2(3)
-output("num: ", o, "\n" )
-
-
-
-
+hi(5)
