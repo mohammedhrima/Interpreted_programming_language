@@ -1,6 +1,13 @@
-func hi(n):
-    if n == 1:
-        return n
-    return n * hi(n - 1)
+func countdown(n):
+    output(n, "\n")
+    if n == 0:
+        return 0
+    else:
+        countdown(n - 1)
+
+num = 5
+countdown(num)
+
+//output("The factorial of ", num, " is ", res)
+for x in list:
     
-m = hi(4)

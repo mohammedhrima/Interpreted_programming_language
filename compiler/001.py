@@ -1,9 +1,8 @@
-
-def func(n):
-    if n > 3:
-        return n + 1
+def countdown(n):
+    print(n)
+    if n == 0:
+        return 0
     else:
-        return func(n - 1)
+        countdown(n - 1)
 
-m = func(6)
-print(m)
+countdown(5)

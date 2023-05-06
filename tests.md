@@ -86,7 +86,4 @@ func hello(x, y ):
 hello(1,2)
 
 
-handle this one:
-    str = "hello"
-    c = str[0, 3] -> c == "hl"
-    c = str[0 : 1] -> c == "ho"
+
