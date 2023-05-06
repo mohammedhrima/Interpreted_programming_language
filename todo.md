@@ -18,6 +18,7 @@
 13- when you get here, plan for next steps
 14- improve error handling
 16 - input
+17- synatx error handling
 
 functions(parm1, param2) ...
 functions returns

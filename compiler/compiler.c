@@ -37,7 +37,7 @@ enum Type
     // asssigns
     assign_, add_assign_, sub_assign_, mul_assign_, div_assign_, mod_assign_,
     // statements
-    while_, if_, elif_, else_,
+    while_, if_, elif_, else_, for_, in_, range_,
     // end statement
     dots_, comma_,
     // parents, brackets
@@ -212,8 +212,44 @@ int ft_strcmp(char *s1, char *s2)
         i++;
     return ((unsigned char)s1[i] - (unsigned char)s2[i]);
 }
-// ptr methods
+
+// Value* methods
 int Value_len(Value **ptr) { int i = 0; while (ptr && ptr[i]) i++; return (i);}
+
+// readline
+char *strjoin(char *string1, char *string2)
+{
+    char *res = calloc(ft_strlen(string1) + ft_strlen(string2) + 1, sizeof(char));
+    if (res == NULL)
+        ft_printf(STDERR_FILENO, "malloc failed in strjoin");
+    if (string1)
+        ft_strcpy(res, string1);
+    if (string2)
+        ft_strcpy(res + ft_strlen(res), string2);
+    return res;
+}
+char *readline(int fd)
+{
+    int len = 0;
+    char *res = NULL;
+    char *c = calloc(2, sizeof(char));
+    char *tmp;
+
+    while (1)
+    {
+        int n = read(fd, c, sizeof(char));
+        if (n <= 0)
+            break;
+        tmp = strjoin(res, c);
+        free(res);
+        res = tmp;
+        if (c[0] == '\n' || c[0] == '\0')
+            break;
+    }
+    if(tmp)
+        tmp[ft_strlen(tmp) - 1] = '\0'; // replace newline with /0
+    return res;
+}
 
 // ft_printf
 void ft_putchar(int fd, char c) { write(fd, &c, sizeof(char));}
@@ -347,6 +383,11 @@ void output(Token *token)
             ft_putstr(fd, " }");
             break;
         }
+        case void_:
+        {
+            ft_putstr(fd, "(void)\n");
+            break;
+        }
         default:
         {
             ft_putstr(err, "Error in output can't output ");
@@ -432,7 +473,7 @@ void ft_printf(int fd, char *fmt, ...)
                         }
                         case void_:
                         {
-                            ft_putstr(fd, "no value\n");
+                            ft_putstr(fd, "(void)\n");
                             break;
                         }
                         default:
@@ -1114,11 +1155,11 @@ Node *prime()
         return node;
     }
     // output function
-    if (tokens[exe_pos]->type == output_)
+    if (check(tokens[exe_pos]->type, output_, input_))
     {
         Node *node = new_node(tokens[exe_pos]);
         Node **list = NULL;
-        skip(output_);
+        skip(tokens[exe_pos]->type);
         skip(lparent_);
         if (tokens[exe_pos]->type == rparent_)
             ft_printf(err, "expected something to output\n");
@@ -1140,7 +1181,33 @@ Node *prime()
         }
         skip(rparent_);
         node->token->array_head = list;
-        return node;
+        Node *left = node;
+        while(tokens[exe_pos]->type == dot_ || tokens[exe_pos]->type == lbracket_)
+        {
+            //ft_printf(err, "%t\n", tokens[exe_pos]->type);
+            while (tokens[exe_pos]->type == lbracket_)
+            {
+                Node *node = new_node(tokens[exe_pos]);
+                skip(lbracket_);
+                node->left = left;      // element to iterate over it
+                node->right = expr();
+                node->right->token->type = att_type_;
+                skip(rbracket_);
+                node->token->type = attribute_;
+                left = node;
+            }
+            while (tokens[exe_pos]->type == dot_)
+            {
+                Node *node = new_node(tokens[exe_pos]);
+                skip(dot_);
+                node->left = left;    // element to iterate over it
+                node->right = expr();
+                node->right->token->type = att_type_;
+                node->token->type = attribute_;
+                left = node;
+            }
+        }
+        return left;
     }
     // indexof
     if (tokens[exe_pos]->type == indexof_)
@@ -1270,7 +1337,7 @@ list *tmp;
 Token *get_var(char *name)
 {
     ft_printf(out, "get %s from level %d\n",name, level);
-      visualize_variables();
+    visualize_variables();
     tmp = current;
     while(tmp)
     {
@@ -1321,20 +1388,6 @@ Value *evaluate(Node *node)
         Value *left = evaluate(node->left);
         Value *right = evaluate(node->right);
         ft_printf(out, "do assignement between %v and %v\n", left, right);
-        // if(right->type == return_)
-        // {
-        //     Node **ret_head = right->bloc_head;
-        //     Value *ret = NULL;
-        //     ft_printf(out, "Evaluate bloc in function\n");
-        //     int j = 0;
-        //     while(ret_head[j])
-        //     {
-        //         ret = evaluate(ret_head[j]);
-        //         j++;
-        //     }
-        //     right = ret;
-        //     ft_printf(out, "right now is %v\n", right);
-        // }
         // skip this error for function because i can set global variable to idenitifer from params
         if (right->type == identifier_)
             ft_printf(err, "Error , Undeclared variable: %s\n", right->name);
@@ -1516,20 +1569,6 @@ Value *evaluate(Node *node)
     {
         Value *left = evaluate(node->left);
         Value *right = evaluate(node->right);
-        // if(right->type == return_)
-        // {
-        //     Node **ret_head = right->bloc_head;
-        //     Value *ret = NULL;
-        //     ft_printf(out, "Evaluate bloc in funtion\n");
-        //     int j = 0;
-        //     while(ret_head[j])
-        //     {
-        //         ret = evaluate(ret_head[j]);
-        //         j++;
-        //     }
-        //     right = ret;
-        //     ft_printf(out, "right now is %v\n", right);
-        // }
         if (left->type == identifier_)
             ft_printf(err, "Undeclared variable '%s'\n", left->name);
         if (right->type == identifier_)
@@ -1781,7 +1820,23 @@ Value *evaluate(Node *node)
             output(evaluate(head[i]));
             i++;
         }
-        return (node->token);
+        return (node->token); // to be verified
+    }
+    case input_:
+    {
+        Node **head = node->token->array_head;
+        int i = 0;
+        while (head[i])
+        {
+            // verify return_ it may cause problems or something
+            output(evaluate(head[i]));
+            i++;
+        }
+        char *string = readline(out);
+        Value *new = calloc(1,sizeof(Value));
+        new->type = characters_;
+        new->characters = string;
+        return (new);
     }
     case func_dec_:
     {
@@ -1844,7 +1899,7 @@ Value *evaluate(Node *node)
         }
         // visualize_variables();
         exit_current_scoop();
-        ft_printf(out ,"-> function return %v\n", ret);
+        // ft_printf(out ,"function return %v\n", ret); 
         ret = new_token(void_);
         return ret;
         break;
@@ -1868,7 +1923,12 @@ Value *evaluate(Node *node)
         int index = 0;
         Type type = void_;
 
-        if(right->type == characters_)
+        if(right->type == identifier_)
+        {
+            key = right->name;
+            type = key_iter;
+        }
+        else if(right->type == characters_)
         {
             key = right->characters;
             type = key_iter;
@@ -1922,10 +1982,14 @@ Value *evaluate(Node *node)
                 if (ft_strcmp(key, "toup") == 0)
                 {
                     Value *ret = calloc(1, sizeof(Value));
+                    ret->characters = calloc(ft_strlen(left->characters) + 1, sizeof(char));
                     ret->type = characters_;
                     while (left->characters && left->characters[i])
                     {
-                        ret->characters[i] = to_upper(left->characters[i]);
+                        if(ft_isalpha(left->characters[i]))
+                            ret->characters[i] = to_upper(left->characters[i]);
+                        else
+                            ret->characters[i] = left->characters[i];
                         i++;
                     }
                     return ret;
@@ -1933,10 +1997,14 @@ Value *evaluate(Node *node)
                 if (ft_strcmp(key, "tolow") == 0)
                 {
                     Value *ret = calloc(1, sizeof(Value));
+                    ret->characters = calloc(ft_strlen(left->characters) + 1, sizeof(char));
                     ret->type = characters_;
                     while (left->characters && left->characters[i])
                     {
-                        ret->characters[i] = to_lower(left->characters[i]);
+                        if(ft_isalpha(left->characters[i]))
+                            ret->characters[i] = to_lower(left->characters[i]);
+                        else
+                            ret->characters[i] = left->characters[i];
                         i++;
                     }
                     return ret;
@@ -2089,21 +2157,13 @@ void visualize_variables(void)
         tmp = tmp->next;
         i++;
     }
-    // ft_printf(out, "\nfunctions: \n");
-    // i = 0;
-    // while (FUNCTIONS[i])
-    // {
-    //     if (FUNCTIONS[i])
-    //         ft_printf(out, "     %k\n", FUNCTIONS[i]);
-    //     ft_printf(out, "        with variables\n");
-    //     int j = 0;
-    //     while (FUNCTIONS[i]->VARIABLES[j])
-    //     {
-    //         ft_printf(out, "               %k\n", FUNCTIONS[i]->VARIABLES[j]);
-    //         j++;
-    //     }
-    //     i++;
-    // }
+    ft_printf(out, "\nfunctions: \n");
+    i = 0;
+    while (FUNCTIONS[i])
+    {
+        ft_printf(out, "     %k\n", FUNCTIONS[i]->token);
+        i++;
+    }
 #endif
     ft_printf(out, "\n");
 }
