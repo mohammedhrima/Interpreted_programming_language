@@ -1,2 +1,3 @@
-n = input("hello> ").len
-output("n is ", n)
+for x in range(0, 10):
+    output("x is ", x, "\n")
+
