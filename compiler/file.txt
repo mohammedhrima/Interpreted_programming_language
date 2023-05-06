@@ -1,3 +1,8 @@
-for x in range(0, 10):
-    output("x is ", x, "\n")
+list = [11,22,33,44,55,66,77,88]
+
+for x in range(0, list.len):
+    if list[x] % 2 == 0:
+        output("num is ", list[x], " is odd\n")
+    else:
+        output("num is ", list[x], " is even\n")
 

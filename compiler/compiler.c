@@ -12,7 +12,7 @@
 #define in STDIN_FILENO
 #define out STDOUT_FILENO
 #define err STDERR_FILENO
-#define DEBUG true
+#define DEBUG false
 
 // typedefs
 typedef struct Node Node;
@@ -465,7 +465,7 @@ void ft_printf(int fd, char *fmt, ...)
                         case array_:
                         {
                             ft_putstr(fd, "value: \n");
-                            ft_putstr(fd, "        ");
+                            ft_putstr(fd, "                  ");
                             output(token);
                             break;
                         }
@@ -912,8 +912,6 @@ Node *conditions()
             ft_printf(err, "can't loop over %t\n", node->left->token->type);
         skip(in_);
         node->right = prime();
-        if(node->right->token->type != array_ && node->right->token->type != range_ )
-            ft_printf(err, "Expected array to iterate over it but received %t\n", node->right->token->type);
         skip(dots_);
         node->token->bloc_head = bloc(for_level + 1);
         return node;
@@ -1301,7 +1299,7 @@ Node *prime()
                 skip(lbracket_);
                 node->left = left;      // element to iterate over it
                 node->right = expr();
-                node->right->token->type = att_type_;
+                // node->right->token->type = att_type_;
                 skip(rbracket_);
                 node->token->type = attribute_;
                 left = node;
@@ -1312,7 +1310,7 @@ Node *prime()
                 skip(dot_);
                 node->left = left;    // element to iterate over it
                 node->right = expr();
-                node->right->token->type = att_type_;
+                // node->right->token->type = att_type_;
                 node->token->type = attribute_;
                 left = node;
             }
@@ -1357,7 +1355,7 @@ void exit_current_scoop()
 
 Token *new_variable(Token *var)
 {
-    ft_printf(out, "index: %d\n", current->index);
+    ft_printf(out, "new variable: %v\n", var);
 #if 0
     Token *new = var;
 #else
@@ -1388,7 +1386,7 @@ Token *get_var(char *name)
         }
         tmp = tmp->prev;
     }
-    ft_printf(out, "not found\n");
+    ft_printf(out, "variable '%s' not found\n", name);
     return NULL;
 }
 
@@ -1761,25 +1759,34 @@ Value *evaluate(Node *node)
     }
     case for_:
     {
-        Value *left = node->left->token;
+       
         Value *right = evaluate(node->right);
+        right->array_len = Value_len(right->array);
         Value *ret;
-        ft_printf(out, "left is %v\n", left);
+        // ft_printf(out, "left is %v\n", left);
         if(right->type != array_ && right->type != range_ )
             ft_printf(err, "Expected an array to iterate over it in for loop\n");
 
         int j = 0;
+        access_next_scoop();
         while(j < right->array_len)
         {
-            access_next_scoop();
-            Token *value = right->array[j];
-            value->name = left->name;
-            new_variable(value);
+            // Value *left = evaluate(node->left);
+            // new_variable(value);
+            right->array[j]->name = node->left->token->name;
+            Token *value = get_var(node->left->token->name);
+            //value->name = node->left->token->name;
+            if(value == NULL)
+                new_variable(right->array[j]);
+            else
+                *value = *right->array[j];
+      
             ret = NULL;
             int i = 0;
             Node **bloc_head = node->token->bloc_head;
             while (bloc_head[i])
             {
+             
                 if(bloc_head[i]->token->type == return_)    
                 {
                     return bloc_head[i]->token;
@@ -1787,9 +1794,9 @@ Value *evaluate(Node *node)
                 ret = evaluate(bloc_head[i]);
                 i++;
             }
-            exit_current_scoop();
             j++;
         }
+        exit_current_scoop();
         return ret;
     }
     // logic operator
@@ -2048,6 +2055,8 @@ Value *evaluate(Node *node)
         
         if(type == key_iter)
         {
+            // ft_printf(out, "Enter key iteration left: %k , key : %s\n", left, key);
+            // exit(0);
             if (left->type == obj_)
             {
                 int i = 0;
@@ -2228,6 +2237,8 @@ Value *evaluate(Node *node)
         if(type == index_iter)
         {
             // exit(0);
+            // ft_printf(out, "Enter index iteration\n");
+            // exit(0);
             if (left->type == characters_)
             {
                 long i = 0;
@@ -2285,12 +2296,15 @@ void visualize_variables(void)
         tmp = tmp->next;
         i++;
     }
-    ft_printf(out, "\nfunctions: \n");
-    i = 0;
-    while (FUNCTIONS[i])
+    if(FUNCTIONS[0])
     {
-        ft_printf(out, "     %k\n", FUNCTIONS[i]->token);
-        i++;
+        ft_printf(out, "\nfunctions: \n");
+        i = 0;
+        while (FUNCTIONS[i])
+        {
+            ft_printf(out, "     %k\n", FUNCTIONS[i]->token);
+            i++;
+        }
     }
 #endif
     ft_printf(out, "\n");
