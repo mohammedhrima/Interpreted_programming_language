@@ -12,11 +12,11 @@
 11- functins declaration, params, return
 12 - add "type" as data type
 13- input
-
 14 - range
 15- "in" key word 
 16 - for loop
-16- for loop should return array
+
+
 12- add attributes for all data types
 13- when you get here, plan for next steps
 14- improve error handling
