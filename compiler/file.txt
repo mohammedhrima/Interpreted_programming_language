@@ -1,4 +1,0 @@
-n = 11
-if n == 11:
-    if n == name:
-        output("hello\n")

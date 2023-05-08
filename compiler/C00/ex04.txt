@@ -1,5 +1,0 @@
-func is_negative(c):
-    return c < 0
-
-x = is_negative(-1)
-output(x)

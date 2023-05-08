@@ -1,3 +1,0 @@
-str = "abd"
-
-output(str.toupper)

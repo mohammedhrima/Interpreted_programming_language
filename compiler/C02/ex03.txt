@@ -1,4 +1,0 @@
-
-str = "123"
-res = str.isnumber
-output(res)

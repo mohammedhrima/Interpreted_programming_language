@@ -1,5 +1,0 @@
-func ft_strstr(str, to_find):
-    return str.indexof(to_find)
-
-str = "abcdef"
-output(ft_strstr(str, "ef") ,"\n")
