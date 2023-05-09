@@ -88,3 +88,4 @@ hello(1,2)
 
 after:
 - for loop should return array
+- input to be verifiey

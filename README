@@ -1,3 +1,94 @@
 # Current project is in Progress ...
 
-- I built a programing language that has syntax similar to python
+- I've tried to build a mini programming language that has syntax similar to python with C
+
++ data types:
+    characters : character or string
+    boolean    : true or false
+    number     : digits or floats
+    array      : starts with '[' and ends with ']'
+    object     : starts with '{' keys + values '}'
+
+    example:
+        char_value   = "hello world"
+        bool_value   = true
+        num_value    = 3.14
+        array_value  = [1,2,3,5]
+        object_value = {
+                        name: "user",
+                        age: 25
+                        }               
+
++ comments:
+    for one line of comment use : // my comment
+    for bloc of comments use    : """
+                                    bloc of
+                                    multiple
+                                    comments
+                                  """
+
++ built in functions:
+    output: it's simalar to print in python
+        examples:
+            output("hello world\n")
+
+            obj = {
+                name: "user",
+                age: 10
+            }
+            output(obj)
+
+            output("hello" + " world\n")
+            etc ...
+
+    input: it's similar to input in python
+        input("write your text here to show to user")
+        it read input as string
+
+    range: it return array of number, takes two arguemnts, number to starts with and th end with
+        example:
+            range(2, 8) // return [2,3,4,5,6,7]
+
++ statements and loop:
+    if "condition":
+        bloc of code te execute
+    
+    example:
+        x = 10
+        if x > 0:
+            output("is positive\n")
+        elif x == 0:
+            output("is zero\n")
+        else:
+            output("is negative\n")
+
+    while "condition":
+        bloc of code to execute
+
+    example:
+        x = 0
+        while x < 10:
+            x += 1
+
+    for loop:
+        example:
+        for x in range(0, 10):
+            output(x)
+        
+        str = "abcdef"
+        for i in range(0, str.len):
+            output(str[i])
+    
+    there is also, break, continue key words 
+
++ function declaration:
+    func my_func(param1, param2):
+        // bloc of code to execute
+    
+    to call it:
+        my_func(1, 2)
+
++ data type attributes:
+    characters:
+        len
+        

@@ -1,0 +1,2 @@
+str = input("enter string: ")
+output(str.tolow)

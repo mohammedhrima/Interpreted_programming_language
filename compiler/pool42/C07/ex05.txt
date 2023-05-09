@@ -1,0 +1,3 @@
+str = "hello everyone I'm split attribute"
+res = str.split(" ")
+output(res)

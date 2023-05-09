@@ -1,0 +1,4 @@
+str1 = input("enter 1st string: ")
+str2 = input("enter 2nd string: ")
+
+output(str1 == str2)

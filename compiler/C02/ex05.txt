@@ -1,3 +1,0 @@
-str = "ABCDE"
-res = str.isupper
-output(res)
