@@ -1,4 +1,0 @@
-str1 = input("enter string: ")
-str2 = input("enter  substring: ")
-
-output(str1.endswith(str2))

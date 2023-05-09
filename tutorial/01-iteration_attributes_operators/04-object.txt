@@ -1,0 +1,13 @@
+obj = {
+    name: "mohammed",
+    age: 25
+}
+
+output("print object: \n")
+output(obj, "\n")
+output("obj has name: ", obj.name, " and age ", obj.age,"\n")
+output("obj name has len ", obj.name.len,"\n")
+
+// type
+output("test type:\n")
+output(value.type, "\n")

@@ -1,5 +1,0 @@
-x = {
-    stname: "moha",
-    ndname:"hrima"
-}
-output(x.stname)

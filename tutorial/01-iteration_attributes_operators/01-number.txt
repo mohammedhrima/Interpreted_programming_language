@@ -1,0 +1,13 @@
+n = 10
+
+output("test base:\n")
+output("n in base 10 is: ", n.base("0123456789"), "\n")
+output("n in base 16 is: ", n.base("0123456789ABCDEF"), "\n")
+output("n in base 2 is: ", n.base("01"), "\n\n")
+
+output("test to char:\n")
+output("n to characters ", n.tochar,"\n")
+
+// type
+output("test type:\n")
+output(value.type, "\n")
