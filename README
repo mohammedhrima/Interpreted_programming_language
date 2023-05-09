@@ -4,6 +4,7 @@
 - You can check the tutorial for more details
 
 ## how to use
+
 ```bash
     ./a.out your_file.txt
 ```
