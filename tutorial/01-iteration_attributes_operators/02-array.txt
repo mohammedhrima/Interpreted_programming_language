@@ -1,0 +1,35 @@
+// iteration
+array = ["h", "e", "l", "l", "o", "\n"]
+output("array[0] is ", array[0], "\n\n")
+
+
+// concatination
+array1 = [1,2,3]
+array2 = [4,5,6]
+output("test concatination:\n")
+output("array1 + array2 is ", array1 + array2)
+output("\n\n")
+
+
+// find indexof of substring
+array = [11,22,33]
+output("test indexof:\n")
+output("index of 22 in array ", array.indexof(22), "\n\n")
+
+
+// count how much substring in string
+array = [11,22,33, 44, 55, 11, 22, 33, 11]
+output("test count:\n")
+output("there is ",array.count(11)," 11 in array", "\n\n")
+
+
+// len
+output("test len:\n")
+array = [11,22,33, 44, 55, 11, 22, 33, 11]
+output(array.len, "\n\n")
+
+
+// type
+output("test type:\n")
+array = [11,22,33, 44, 55, 11, 22, 33, 11]
+output(array.type, "\n\n")

@@ -1,0 +1,16 @@
+
+array = [11,22,33,44,55]
+
+for x in range(0, array.len):
+    output("array[",x, "] is ", array[x], "\n")
+
+
+output("\n")
+for y in array:
+    output("y is: ", y, "\n")
+
+
+output("\ndo iteration over string with for loop\n\n")
+str = "abcdefghijklmnop"
+for z in range(str.len - 1, 0):
+    output("str[",z,"] is ", str[z], "\n")

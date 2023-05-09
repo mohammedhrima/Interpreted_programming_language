@@ -1,0 +1,4 @@
+func compare(left, right):
+    return left == right
+
+output(compare("abcd","abcd"))

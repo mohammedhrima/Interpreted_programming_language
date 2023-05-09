@@ -1,0 +1,10 @@
+x = 0
+while x < 10:
+    output("increment x: ", x ,"\n")
+    x += 1
+
+output("\n")
+y = 10
+while y > 0:
+    output("decrement y: ", y, "\n")
+    y -= 1

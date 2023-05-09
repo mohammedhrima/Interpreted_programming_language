@@ -1,0 +1,15 @@
+func sayHi(str):
+    output("hello ",str, "\n")
+
+sayHi("Mohammed")
+
+output("\ntest return\n")
+
+func add(x,y):
+    return x + y
+
+output("2 + 5 is ", add(2, 5), "\n")
+
+"""
+feel free to do your magic
+"""

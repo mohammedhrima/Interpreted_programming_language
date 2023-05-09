@@ -1,0 +1,4 @@
+n = 0
+while n < 10:
+    output(n)
+    n += 1

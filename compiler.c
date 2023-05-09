@@ -27,6 +27,7 @@ char *type_to_string(Type type);
 Token *evaluate(Node *node);
 void visualize_variables(void);
 void ft_putchar(int fd, char c);
+void undeclared_error(Token *token, char *type);
 
 enum Type
 {
@@ -34,7 +35,7 @@ enum Type
     // like none data type
     void_,
     // data types
-    identifier_, characters_, boolean_, number_, array_, obj_, type_, tuple_,
+    identifier_, characters_, boolean_, number_, array_, obj_, tuple_,
     // asssigns
     assign_, add_assign_, sub_assign_, mul_assign_, div_assign_, mod_assign_,
     // statements
@@ -56,7 +57,7 @@ enum Type
     // attribute
     dot_, attribute_, att_type_, key_iter, index_iter,
     // built in attributes
-    indexof_, count_, split_,
+    indexof_, count_, split_, trim_, base_, starts_with_, ends_with_,
     // EOF
     eof_,
 };
@@ -75,7 +76,8 @@ struct Token
     union
     {
         // number
-        struct {
+        struct
+        {
             long double number;
             bool is_float;
         };
@@ -136,7 +138,8 @@ struct
     // functions
     {"func", func_dec_},
     // func attributes
-    {"indexof", indexof_}, {"count", count_}, {"split", split_},
+    {"indexof", indexof_}, {"count", count_}, {"split", split_}, {"trim", trim_}, {"base", base_},
+    {"startswith", starts_with_},{"endswith", ends_with_},
     {0, 0},
 };
 
@@ -164,7 +167,7 @@ struct
 {
     char *special;
     char replace;
-} special_characters[] = {{"\\n", '\n'}, {"\\\"", '\"'}, {"\\\'", '\''}, {"\\\\", '\\'}, {0, 0}};
+} special_characters[] = {{"\\n", '\n'},{"\\\"", '\"'},{"\\\'", '\''},{"\\\\", '\\'},{0, 0},};
 
 // character methods
 int ft_isnum(int c) { return (c >= '0' && c <= '9'); }
@@ -201,7 +204,7 @@ int ft_strncmp(char *s1, char *s2, size_t n)
 void ft_strncpy(char *dest, char *src, int size)
 {
     if (dest == NULL || src == NULL)
-        ft_printf(STDERR_FILENO, "receive NULL in strncpy\n");
+        ft_printf(err, "receive NULL in strncpy\n");
     int len = ft_strlen(dest);
     int i = 0;
     while (src[i] && i < size)
@@ -233,7 +236,6 @@ char **split(char *str, char *spliter)
         start = i;
         while(str[i] && ft_strncmp(str + i, spliter, ft_strlen(spliter)) != 0)
             i++;
-        printf("cut from %d to %d\n", start , i);
         if(res == NULL)
             res = calloc(j + 2, sizeof(char*));
         else
@@ -245,6 +247,37 @@ char **split(char *str, char *spliter)
     }
     return res;
 }
+char *strtrim(char *str, char *set)
+{
+    int i = 0;
+    int start = 0;
+    int end = ft_strlen(str);
+    while(str && str[i])
+    {
+        if(ft_strncmp(str + i, set, ft_strlen(set)) == 0)
+        {
+            start = i + ft_strlen(set);
+            break;
+        }
+        i++;
+    }
+    i = ft_strlen(str);
+    if(i)
+        i -= 1; // protection from segfault
+    while(i > start && str && str[i])
+    {
+        if(ft_strncmp(str + i, set, ft_strlen(set)) == 0)
+        {
+            // printf("found end in %d\n", i);
+            end = i;
+            break;
+        }
+        i--;
+    }
+    char *res = calloc(end - start + 1, sizeof(char));
+    ft_strncpy(res  , str + start, end - start);
+    return res;
+}
 void print_space(int len)
 {
     int i = 0;
@@ -253,6 +286,38 @@ void print_space(int len)
         ft_putchar(out,' ');
         i++;   
     }
+}
+// convert base
+char* convert_base(long long number, char* base) {
+    char* converted;
+    int index = 0;
+    int size = 64; 
+
+    converted = calloc(size +1 , sizeof(char));
+
+    if (number == 0) {
+        converted[index++] = base[0];
+    } 
+    int base_length = ft_strlen(base);
+    while (number != 0) {
+        int remainder = number % base_length;
+        converted[index++] = base[remainder];
+        number /= base_length;
+        if (index >= size) {
+            size *= 2;
+            converted = (char*)realloc(converted, size * sizeof(char));
+        }
+    }
+    int start = 0;
+    int end = index - 1;
+    while (start < end) {
+        char temp = converted[start];
+        converted[start] = converted[end];
+        converted[end] = temp;
+        start++;
+        end--;
+    }
+    return converted;
 }
 
 // Value* methods
@@ -301,7 +366,7 @@ void ft_putstr(int fd, char *str)
     else
         write(fd, str, ft_strlen(str));
 }
-void ft_putnbr(int fd, long num)
+void ft_putnbr(int fd, long long num)
 {
     if (num < 0)
     {
@@ -339,6 +404,9 @@ bool ft_putfloat(int fd, double num, int decimal_places)
     else is_float = false;
     return is_float;
 }
+
+
+
 // built in functions
 void output(Token *token)
 {
@@ -349,13 +417,7 @@ void output(Token *token)
         switch (token->type)
         {
         case identifier_:
-            ft_printf(err, "Undeclared variable '%s' in output\n", token->name);
-        case type_:
-        {    
-            // exit(0);
-            ft_putstr(fd, type_to_string(token->value_type));
-            break;
-        }
+            undeclared_error(token, "variable");
         case characters_:
         {
             char *string = token->characters;
@@ -407,9 +469,9 @@ void output(Token *token)
             {
                 output(token->array[i]);
                 if (token->array[i + 1])
-                    ft_putstr(fd, ", ");
+                    ft_putstr(fd, "\033[31m, ");
             }
-            ft_putstr(fd, " ]");
+            ft_putstr(fd, " \033[31m]");
             break;
         }
         case obj_:
@@ -421,9 +483,9 @@ void output(Token *token)
                 ft_putstr(fd, ": ");
                 output(token->object[i]);
                 if (token->object[i + 1])
-                    ft_putstr(fd, ",");
+                    ft_putstr(fd, "\033[31m,");
             }
-            ft_putstr(fd, " }");
+            ft_putstr(fd, " \033[31m}");
             break;
         }
         case void_:
@@ -473,8 +535,6 @@ void ft_printf(int fd, char *fmt, ...)
                     if (token)
                     {
                         ft_putstr(fd, type_to_string(token->type));
-                        // print_space(10 - ft_strlen(type_to_string(token->type)));
-                        
                         ft_putstr(out, " in line [");
                         if(token->line < 10)
                             ft_putstr(out, "00");
@@ -574,7 +634,7 @@ char *type_to_string(Type type)
     } Types[] = {
         // data types
         {"IDENTIFIER", identifier_}, {"CHARACTERS", characters_}, {"BOOLEAN", boolean_},
-        {"NUMBER", number_}, {"ARRAY", array_}, {"OBJ", obj_}, {"TYPE", type_},{"VOID", void_},
+        {"NUMBER", number_}, {"ARRAY", array_}, {"OBJ", obj_}, {"VOID", void_},
         {"TUPLE", tuple_},
         // assigns
         {"ASSIGNEMENT", assign_}, {"ADD ASSIGN", add_assign_}, {"SUB ASSIGN", sub_assign_},
@@ -602,7 +662,8 @@ char *type_to_string(Type type)
         // attributes
         {"DOT", dot_}, {"ATTRIBUTE NODE", attribute_} ,{"ATTRIBUTE TYPE", att_type_},
         // built in attributes
-        {"indexof", indexof_},{"split", split_}, {"count", count_},
+        {"indexof", indexof_},{"split", split_}, {"trim", trim_}, {"count", count_},{"base", base_},
+        {"starts with", starts_with_},{"ends with", ends_with_},
         // EOF
         {"EOF", eof_},
         {0, 0},
@@ -634,6 +695,24 @@ int line = 1;
 int column;
 int tab;
 int start;
+
+// Error handling
+void undeclared_error(Token *token, char *type)
+{
+    ft_putchar(out, '\n');
+    txt_pos = token->txt_pos;
+    while(txt_pos > 0 && text[txt_pos - 1] != '\n')
+        txt_pos--;
+    while(text[txt_pos] && text[txt_pos] != '\n')
+    {
+        ft_putchar(out, text[txt_pos]);
+        txt_pos++;
+    }
+    ft_putchar(out, '\n');
+    print_space(token->column - ft_strlen(token->name));
+    ft_putstr(out, "^\n");
+    ft_printf(err, "Error: Undeclared %s in line '%d'\n", type, token->line);
+}
 
 Token *new_token(Type type)
 {
@@ -679,7 +758,7 @@ Token *new_token(Type type)
     }
     case number_:
     {
-        double num = 0.0;
+        long double num = 0.0;
         while (ft_isnum(text[start]))
         {
             num = 10 * num + text[start] - '0';
@@ -687,10 +766,10 @@ Token *new_token(Type type)
         }
         if (text[start] == '.')
         {
-            new->is_float = true;
+            new->is_float= true;
             start++;
         }
-        double pres = 0.1;
+        long double pres = 0.1;
         while (ft_isnum(text[start]))
         {
             num = num + pres * (text[start] - '0');
@@ -799,16 +878,46 @@ void build_tokens()
         {
             start = txt_pos;
             txt_pos++;
+            // ft_putchar(out, '\n');
             while (text[txt_pos] && text[txt_pos] != text[start])
+            {
                 txt_pos++;
+            }
             if (text[txt_pos] != text[start])
-                ft_printf(err, "expected '%c'\n", text[start]);
+            {
+                ft_putchar(out, '\n');
+                while(txt_pos > 0 && text[txt_pos - 1] != '\n')
+                    txt_pos--;
+                int i = txt_pos;
+                while(text[txt_pos] && text[txt_pos] != '\n')
+                {
+                    ft_putchar(out, text[txt_pos]);
+                    txt_pos++;
+                }
+                ft_putchar(out, '\n');
+                print_space(txt_pos - i);
+                ft_putstr(out, "^\n");
+                ft_printf(err, "Syntax error expected '%c'\n", text[start]);
+            }
             start++;
             new_token(characters_);
             txt_pos++;
             continue;
         }
-        ft_printf(err, "Unknown value s:'%s', c:'%c', d:'%d' \n", text + txt_pos, text[txt_pos], text[txt_pos]);
+        ft_putchar(out, '\n');
+        while(txt_pos > 0 && text[txt_pos - 1] != '\n')
+            txt_pos--;
+        int i = txt_pos;
+        while(text[txt_pos] && text[txt_pos] != '\n')
+        {
+            ft_putchar(out, text[txt_pos]);
+            txt_pos++;
+        }
+        ft_putchar(out, '\n');
+        print_space(txt_pos - i);
+        ft_putstr(out, "^\n");
+        ft_printf(err, "Syntax error\n");
+        // ft_printf(err, "Unknown value s:'%s', c:'%c', d:'%d' \n", text + txt_pos, text[txt_pos], text[txt_pos]);
     }
     new_token(eof_);
 }
@@ -863,6 +972,7 @@ Node *comparison(); // < > <= >=
 Node *add_sub();    // + -
 Node *mul_div();    // * /
 Node *sign();       // sign  -
+Node *iteration();  // .len ... [0]
 Node *prime();      // primary
 Node *parents();    // ()
 
@@ -1092,18 +1202,60 @@ Node *sign()
         node->token->type = mul_;
         node->left = new_node(new_token(number_));
         node->left->token->number = -1;
-        node->right = prime();
+        node->right = iteration();
         return node;
     }
-    return prime();
+    return iteration();
+}
+
+// iteration
+Node *iteration()
+{
+    Node *left = prime();
+    if(check(left->token->type, identifier_, characters_, func_call_, input_, 0) && (tokens[exe_pos]->type == lbracket_ || tokens[exe_pos]->type == dot_))
+    {
+        while(tokens[exe_pos]->type == dot_ || tokens[exe_pos]->type == lbracket_)
+        {
+            // ft_printf(err, "%t\n", tokens[exe_pos]->type);
+            while (tokens[exe_pos]->type == lbracket_)
+            {
+                Node *node = new_node(tokens[exe_pos]);
+                skip(lbracket_);
+                node->left = left;      // element to iterate over it
+                node->right = expr();
+                // if(tokens[exe_pos]->type == dots_)
+                //node->right->token->type = att_type_; // it get declared as identifier
+                skip(rbracket_);
+                node->token->type = attribute_;
+                left = node;
+            }
+            while (tokens[exe_pos]->type == dot_)
+            {
+                Node *node = new_node(tokens[exe_pos]);
+                skip(dot_);
+                node->left = left;    // element to iterate over it
+                node->right = prime();
+                if(node->right->token->type == identifier_)
+                    node->right->token->type = att_type_; // it get decared sometimes as identifier
+                node->token->type = attribute_;
+                left = node;
+            }
+        }
+    }
+    return left;
 }
 
 // primary
 Node *prime()
 {
     if(check(tokens[exe_pos]->type, lparent_, 0))
-        return parents(expr, 0, lparent_, rparent_);
-        // function declaration
+    {
+        skip(lparent_);
+        Node *node = expr();
+        skip(rparent_);
+        return node;
+    }
+    // function declaration
     if (check(tokens[exe_pos]->type, func_dec_, 0))
     {
         ft_printf(out, "found function declaration \n");
@@ -1123,7 +1275,7 @@ Node *prime()
         return node;
     }
     // we can't iterate over type_ number_ break_ continue_
-    if (check(tokens[exe_pos]->type, type_, boolean_, number_, break_, continue_, 0))
+    if (check(tokens[exe_pos]->type, boolean_, number_, break_, continue_, 0))
     {
         Node *node = new_node(tokens[exe_pos]);
         skip(tokens[exe_pos]->type);
@@ -1134,6 +1286,8 @@ Node *prime()
     {
         Node *node = new_node(tokens[exe_pos]);
         skip(characters_);
+        return node;
+#if 0
         Node *left = node;
         // it's possible to iterate over characters
         while(tokens[exe_pos]->type == dot_ || tokens[exe_pos]->type == lbracket_)
@@ -1144,7 +1298,8 @@ Node *prime()
                 node = new_node(tokens[exe_pos]);
                 skip(lbracket_);
                 node->left = left;      // element to iterate over it
-                node->right = expr();  
+                node->right = expr();
+                node->right->token->type = att_type_; // it get declared as identifier
                 skip(rbracket_);
                 node->token->type = attribute_;
                 left = node;
@@ -1155,11 +1310,14 @@ Node *prime()
                 skip(dot_);
                 node->left = left;    // element to iterate over it
                 node->right = expr();
+                if(node->right->token->type == identifier_)
+                    node->right->token->type = att_type_; // it get decared sometimes as identifier
                 node->token->type = attribute_;
                 left = node;
             }
         }
         return left;
+#endif
     }
     // array
     if (check(tokens[exe_pos]->type, lbracket_, 0))
@@ -1218,7 +1376,7 @@ Node *prime()
         return node;
     }
     // built in attributes
-    if (check(tokens[exe_pos]->type, indexof_, count_, split_,0))
+    if (check(tokens[exe_pos]->type, indexof_, count_, split_, base_, trim_, starts_with_, ends_with_, 0))
     {
         // call it and let iretun rigth value
         // and handle it in attribute
@@ -1234,6 +1392,7 @@ Node *prime()
     {
         Node *node = new_node(tokens[exe_pos]);
         Node **list = NULL;
+        Type type = tokens[exe_pos]->type;
 
         skip(tokens[exe_pos]->type);
         skip(lparent_);
@@ -1241,8 +1400,9 @@ Node *prime()
             ft_printf(err, "expected something to output\n");
         exe_pos--;
         node->token = parents(expr, 0, lparent_, rparent_)->token;
-        node->token->type = output_;
-
+        node->token->type = type;
+        return node;
+#if 0
         Node *left = node;
         // to be verified
         while(tokens[exe_pos]->type == dot_ || tokens[exe_pos]->type == lbracket_)
@@ -1254,7 +1414,6 @@ Node *prime()
                 skip(lbracket_);
                 node->left = left;      // element to iterate over it
                 node->right = expr();
-                node->right->token->type = att_type_;
                 skip(rbracket_);
                 node->token->type = attribute_;
                 left = node;
@@ -1265,25 +1424,29 @@ Node *prime()
                 skip(dot_);
                 node->left = left;    // element to iterate over it
                 node->right = expr();
-                node->right->token->type = att_type_;
+                if(node->right->token->type == identifier_)
+                    node->right->token->type = att_type_; // it get decared sometimes as identifier
                 node->token->type = attribute_;
                 left = node;
             }
         }
         return left;
+#endif
     }
     // identifier
     if(check(tokens[exe_pos]->type, identifier_, 0))
     {
         Node *node = new_node(tokens[exe_pos]);
-        Node *left = node;
+        // Node *left = node;
         skip(identifier_);
         if (tokens[exe_pos]->type == lparent_)
         {
             node->token->type = func_call_;
             node->left = parents(expr, 0, lparent_, rparent_);
-            left = node;
+            // left = node;
         }
+        return node;
+#if 0
         // iterate over identifier than can be array or stirng in future
         // or iterate over function in case function call
         while(tokens[exe_pos]->type == dot_ || tokens[exe_pos]->type == lbracket_)
@@ -1305,11 +1468,14 @@ Node *prime()
                 skip(dot_);
                 node->left = left;    // element to iterate over it
                 node->right = expr();
+                if(node->right->token->type == identifier_)
+                    node->right->token->type = att_type_; // it get decared sometimes as identifier
                 node->token->type = attribute_;
                 left = node;
             }
         }
         return left;
+#endif
     }
     return NULL;
 }
@@ -1321,7 +1487,7 @@ Node *parents(Node *call_node(void), Type to_find, Type left_, Type right_)
     {
         Node *node = new_node(tokens[exe_pos]);
         skip(left_);
-        node->token->type = tuple_;
+        node->token->type = array_;
         int i = 0;
         Node **array = calloc(i + 1, sizeof(Node *));
         if (tokens[exe_pos]->type != right_) // enter if there is params to hold
@@ -1352,13 +1518,13 @@ Node *parents(Node *call_node(void), Type to_find, Type left_, Type right_)
 struct list
 {
     int val_index;
-    Token *variables[200]; // to be modify after
+    Token *variables[5000]; // to be modify after
     list *next;
     list *prev;
 };
 
 list *current;
-Node *FUNCTIONS[500]; // to be modified after
+Node *FUNCTIONS[5000]; // to be modified after
 int func_index;
 int scoop;
 
@@ -1427,7 +1593,7 @@ Node *get_func(char *name)
         if (ft_strcmp(FUNCTIONS[i]->token->name, name) == 0)
             return (FUNCTIONS[i]);
     }
-    ft_printf(err, "function not found %s\n", name);
+    //ft_printf(err, "Undeclared function %s\n", name);
     return NULL;
 }
 
@@ -1444,7 +1610,7 @@ Value *evaluate(Node *node)
         ft_printf(out, "Do assignemnt between %k and %k\n", left, right);
         // skip this error for function because i can set global variable to idenitifer from params
         if (right->type == identifier_)
-            ft_printf(err, "Error , Undeclared variable: %s in line %d\n", right->name, right->line);
+            undeclared_error(right, "variable");
         if (left->type != identifier_ && left->type != right->type)
             ft_printf(err, "can't assign '%s' type %t to '%s' type %t in line %d\n", left->name, left->type, right->name, right->type, left->line);
 
@@ -1512,8 +1678,11 @@ Value *evaluate(Node *node)
     case indexof_:
     case count_:
     case split_:
+    case trim_:
+    case base_:
+    case starts_with_:
+    case ends_with_:
     case att_type_:
-    case type_:
     {
         return (node->token);
     }
@@ -1528,7 +1697,7 @@ Value *evaluate(Node *node)
         {
             Value *to_assign = evaluate(head[i]);
             if (to_assign->type == identifier_)
-                ft_printf(err, "key '%s', has no valid value\n", to_assign->name);
+                undeclared_error(to_assign, "variable");
             ft_printf(out, "value : %v\n", to_assign);
             array[i] = to_assign;
             i++;
@@ -1550,7 +1719,7 @@ Value *evaluate(Node *node)
             Value *to_assign = evaluate(head[i]);
             if (to_assign->type == identifier_)
                 ft_printf(err, "key '%s', has no valid value\n", to_assign->name);
-            ft_printf(out, "value : %v\n", to_assign);
+            // ft_printf(out, "value : %v\n", to_assign);
             object[i] = to_assign;
             i++;
             object = realloc(object, (i + 1) * sizeof(Token *));
@@ -1570,9 +1739,9 @@ Value *evaluate(Node *node)
         Value *right = evaluate(node->right);
 
         if (left->type == identifier_)
-            ft_printf(err, "Undeclared variable '%s' in line %d\n", left->name, left->line);
+            undeclared_error(left, "variable");
         if (right->type == identifier_)
-            ft_printf(err, "Undeclared variable '%s' in line %d\n", right->name, right->line);
+            undeclared_error(right, "variable");
         Value *ret = calloc(1, sizeof(Value));
         if (left->type == number_ && right->type == number_)
         {
@@ -1586,11 +1755,11 @@ Value *evaluate(Node *node)
             if (node->token->type == div_)
                 number = left->number / right->number;
             if (node->token->type == mod_)
-                number = (long)left->number % (long)right->number;
-
+                number = (long double)((long)left->number % (long)right->number);
             ret->is_float = left->is_float || right->is_float;
             ret->type = number_;
             ret->number = number;
+
             return (ret);
         }
         else if (node->token->type == add_ && left->type == characters_ && right->type == characters_)
@@ -1598,8 +1767,14 @@ Value *evaluate(Node *node)
             ret->type = characters_;
             ret->is_char = left->is_char && right->is_char;
             ret->characters = calloc(ft_strlen(left->characters) + ft_strlen(right->characters) + 1, sizeof(char));
-            ft_strcpy(ret->characters, left->characters);
-            ft_strcpy(ret->characters + ft_strlen(ret->characters), right->characters);
+            if(left->is_char)
+                ft_strncpy(ret->characters, left->characters, sizeof(char));
+            else
+                ft_strcpy(ret->characters, left->characters);
+            if(right->is_char)
+                ft_strncpy(ret->characters + ft_strlen(ret->characters), right->characters, sizeof(char));
+            else
+               ft_strcpy(ret->characters + ft_strlen(ret->characters), right->characters);
             return (ret);
         }
         else if (node->token->type == add_ && (left->type == array_ && right->type == array_))
@@ -1626,9 +1801,9 @@ Value *evaluate(Node *node)
         Value *left = evaluate(node->left);
         Value *right = evaluate(node->right);
         if (left->type == identifier_)
-            ft_printf(err, "Undeclared variable '%s' in line %d\n", left->name,left->line);
+            undeclared_error(left, "variable");
         if (right->type == identifier_)
-            ft_printf(err, "Undeclared variable '%s' int line %d\n", right->name,right->line);
+            undeclared_error(right, "variable");
         Value *ret = calloc(1, sizeof(Value));
         ft_printf(out, "do %t between %v and %v\n", node->token->type, left, right);
         if (left->type == number_ && right->type == number_)
@@ -1671,6 +1846,18 @@ Value *evaluate(Node *node)
         }
         else
         {
+            ft_putchar(out, '\n');
+            txt_pos = node->token->txt_pos;
+            while(txt_pos > 0 && text[txt_pos - 1] != '\n')
+                txt_pos--;
+            while(text[txt_pos] && text[txt_pos] != '\n')
+            {
+                ft_putchar(out, text[txt_pos]);
+                txt_pos++;
+            }
+            ft_putchar(out, '\n');
+            print_space(node->token->column - ft_strlen(node->token->name));
+            ft_putstr(out, "^\n");
             ft_printf(err, "Error 2: can't do '%t' between '%t' and '%t'\n", node->token->type, left->type, right->type);
         }
         break;
@@ -1829,9 +2016,9 @@ Value *evaluate(Node *node)
         Value *left = evaluate(node->left);
         Value *right = evaluate(node->right);
         if (left->type == identifier_)
-            ft_printf(err, "Undeclared variable '%s' in line %d\n", left->name,left->line);
+            undeclared_error(left, "variable");
         if (right->type == identifier_)
-            ft_printf(err, "Undeclared variable '%s' in line %d\n", right->name,right->line);
+            undeclared_error(right, "variable");
         Value *ret = calloc(1, sizeof(Value));
         if (left->type == number_ && right->type == number_)
         {
@@ -1877,16 +2064,16 @@ Value *evaluate(Node *node)
         Value *left = evaluate(node->left);
         Value *right = evaluate(node->right);
         if (left->type == identifier_)
-            ft_printf(err, "Undeclared variable '%s'\n", left->name);
+            undeclared_error(left, "variable");
         if (right->type == identifier_)
-            ft_printf(err, "Undeclared variable '%s'\n", right->name);
+            undeclared_error(right, "variable");
         Value *ret = calloc(1, sizeof(Value));
         if (left->type != boolean_ || right->type != boolean_)
             ft_printf(err, "in %t operation, expected boolean values\n", node->token->type);
 
         switch (node->token->type)
         {
-        case and_:
+        case and_:            
             ret->boolean = left->boolean && right->boolean;
             break;
         case or_:
@@ -1913,6 +2100,7 @@ Value *evaluate(Node *node)
     }
     case input_:
     {
+        ft_printf(out, "call input\n");
         Node **head = node->token->array_head;
         int i = 0;
         while (head[i])
@@ -1921,6 +2109,7 @@ Value *evaluate(Node *node)
             output(evaluate(head[i]));
             i++;
         }
+        // exit(0);
         char *string = readline(out);
         Value *new = calloc(1,sizeof(Value));
         new->type = characters_;
@@ -1937,8 +2126,8 @@ Value *evaluate(Node *node)
         ret->array_len = end->number > start->number ? end->number - start->number : start->number - end->number;
         ret->array = calloc(ret->array_len + 1, sizeof(Value*));
 
-        double n = start->number;
-        double step = end->number > start->number ? 1.0 : -1.0;
+        long double n = start->number;
+        long double step = end->number > start->number ? 1.0 : -1.0;
 
         int i = 0;
         while(i < ret->array_len)
@@ -1961,6 +2150,8 @@ Value *evaluate(Node *node)
     {
         // find function
         Node *existed_func = get_func(node->token->name);
+        if(existed_func == NULL)
+            undeclared_error(node->token, "function");
         Node **existed_params = existed_func->left->token->array_head;
         Node **new_params = node->left->token->array_head;
         // access next scoop
@@ -2021,6 +2212,8 @@ Value *evaluate(Node *node)
         // or with characters !!!
         Value *left = evaluate(node->left);   // variable
         Value *right = evaluate(node->right);
+        // ft_printf(out, "do itteration between %k and %k\n",left, right);
+        // exit(0);
         char *key = NULL;
         int val_index = 0;
         Type type = void_;
@@ -2045,7 +2238,7 @@ Value *evaluate(Node *node)
             val_index = (long)right->number;
             type = index_iter;
         }
-        else if(check(right->type, indexof_, split_, count_ ))
+        else if(check(right->type, indexof_, split_, count_, base_, trim_, starts_with_, ends_with_ ))
         {
             type = right->type;
         }
@@ -2055,10 +2248,17 @@ Value *evaluate(Node *node)
         }
         ft_printf(out, "left: %v\nright: %v\n", left, right);
         if (left->type == identifier_)
-            ft_printf(err, "Undeclared variable '%s'\n", left->name);
+            undeclared_error(left, "variable");
         
         if(type == key_iter)
         {
+            if (ft_strcmp(key, "type") == 0)
+            {
+                Value *ret = calloc(1, sizeof(Value));
+                ret->type = characters_;
+                ret->characters = type_to_string(left->type);
+                return ret;
+            }
             if (left->type == obj_)
             {
                 int i = 0;
@@ -2090,7 +2290,7 @@ Value *evaluate(Node *node)
                 {
                     Value *ret = calloc(1, sizeof(Value));
                     ret->type = number_;
-                    ret->number = (double)ft_strlen(left->characters);
+                    ret->number = (long double)ft_strlen(left->characters);
                     return ret;
                 }
                 if (ft_strcmp(key, "toup") == 0)
@@ -2212,6 +2412,13 @@ Value *evaluate(Node *node)
                     ret->characters = type_to_string(left->type);
                     return ret;
                 }
+                if(ft_strcmp(key, "tochar") == 0)
+                {
+                    Value *ret = calloc(1, sizeof(Value));
+                    ret->type = characters_;
+                    ret->characters = convert_base(left->number, "0123456789");
+                    return ret;
+                }
                 ft_printf(err, "%s has no attribute %s\n", left->name, right->name);
             }
             if (left->type == array_)
@@ -2264,6 +2471,7 @@ Value *evaluate(Node *node)
             }
             ft_printf(err, "Can't iterate over %t\n", left->type);
         }
+
         if(type == indexof_)
         {
             // check if is array or string only
@@ -2361,13 +2569,13 @@ Value *evaluate(Node *node)
         }
         if(type == split_)
         {
-            // chekc if is array or string only
-            Value *spliter_value = evaluate(node->right->right);
-            Value *ret = calloc(1,sizeof(Value));
-            ret->type = array_;
-            ret->array = NULL;
             if(left->type == characters_)
             {
+                // chekc if is array or string only
+                Value *spliter_value = evaluate(node->right->right);
+                Value *ret = calloc(1,sizeof(Value));
+                ret->type = array_;
+                ret->array = NULL;
                 char *spliter = spliter_value->characters;
                 char **string_array = split(left->characters, spliter);
                 int i = 0;
@@ -2387,6 +2595,68 @@ Value *evaluate(Node *node)
             }
             else
                 ft_printf(err, "%t has no attribute split\n", left->type);
+        }
+        if(type == trim_)
+        {
+            if(left->type == characters_)
+            {
+                // chekc if is array or string only
+                Value *set_value = evaluate(node->right->right);
+                Value *ret = calloc(1,sizeof(Value));
+                ret->type = characters_;
+                char *set = set_value->characters;
+                ret->characters = strtrim(left->characters, set);
+                return ret;
+            }
+            else
+                ft_printf(err, "%t has no attribute trim\n", left->type);
+        }
+        if(type == starts_with_)
+        {
+            if(left->type == characters_)
+            {
+                Value *to_find_value = evaluate(node->right->right);
+                Value *ret = calloc(1,sizeof(Value));
+                ret->type = boolean_;
+                char *to_find = to_find_value->characters;
+                ret->boolean = false;
+                if(ft_strlen(to_find) < ft_strlen(left->characters))
+                    ret->boolean = (ft_strncmp(left->characters, to_find, ft_strlen(to_find)) == 0);
+                return ret;
+            }
+            else
+                ft_printf(err, "%t has no attribute startswith\n", left->type);
+        }
+        if(type == ends_with_)
+        {
+            if(left->type == characters_)
+            {
+               Value *to_find_value = evaluate(node->right->right);
+                Value *ret = calloc(1,sizeof(Value));
+                ret->type = boolean_;
+                char *to_find = to_find_value->characters;
+                ret->boolean = false;
+                if(ft_strlen(to_find) < ft_strlen(left->characters))
+                    ret->boolean = (ft_strncmp(left->characters + ft_strlen(left->characters) - ft_strlen(to_find), to_find, ft_strlen(to_find)) == 0);
+                return ret;
+            }
+            else
+                ft_printf(err, "%t has no attribute endswith\n", left->type);
+        }
+        if(type == base_)
+        {
+            if(left->type == number_)
+            {
+                // chekc if is array or string only
+                Value *base = evaluate(node->right->right);
+                Value *ret = calloc(1,sizeof(Value));
+                ret->type = characters_;
+                ret->characters = convert_base(left->number, base->characters);
+                ft_printf(out, "return %k\n", ret);
+                return ret;
+            }
+            else
+                ft_printf(err, "%t has no attribute base\n", left->type);
         }
         ft_printf(err, "%v has no attribute %t\n", left, type);
         break;
@@ -2443,6 +2713,9 @@ void execute()
 
 int main(int argc, char **argv)
 {
+    // int n = ft_strncmp("\\\\", "\\\\", ft_strlen("\\\\"));
+    // printf("\\\\                \nn is %d\n", n);
+    // exit(0);
     if (argc == 1)
         ft_printf(err, "expected file to run argc: %d\n", argc);
     FILE *fp = NULL;
