@@ -1248,6 +1248,8 @@ Node *iteration()
 // primary
 Node *prime()
 {
+    while(check(tokens[exe_pos]->type, comma_, 0))
+        exe_pos++;
     if(check(tokens[exe_pos]->type, lparent_, 0))
     {
         skip(lparent_);
@@ -1477,6 +1479,7 @@ Node *prime()
         return left;
 #endif
     }
+   
     return NULL;
 }
 
@@ -1599,7 +1602,7 @@ Node *get_func(char *name)
 
 Value *evaluate(Node *node)
 {
-    ft_printf(out, "Evaluate %k\n", node->token);
+    // ft_printf(out, "Evaluate %k\n", node->token);
     switch (node->token->type)
     {
     // assignement
