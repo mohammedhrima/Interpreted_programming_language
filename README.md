@@ -380,7 +380,7 @@
     - range function: return array of number 
     ```python
         range(0, 10) // return [0,1,2,3,4,6,7,8,9]
-        range(10, 0) // return [9,8,7,6,5,4,3,2,1]
+        range(10, 0) // return [10,9,8,7,6,5,4,3,2,1]
     ```
     - you can use 'in' keyword to iterate over array:
      ```python
