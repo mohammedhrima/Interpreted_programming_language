@@ -1,4 +1,4 @@
-str = input("enter string: "),,,,
+str = input("enter string: ")
 n = str.tonum
 
 output("n is : ", n, " has type ", n.type)

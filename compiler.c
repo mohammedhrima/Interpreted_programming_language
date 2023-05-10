@@ -1248,8 +1248,6 @@ Node *iteration()
 // primary
 Node *prime()
 {
-    while(check(tokens[exe_pos]->type, comma_, 0))
-        exe_pos++;
     if(check(tokens[exe_pos]->type, lparent_, 0))
     {
         skip(lparent_);
@@ -1479,6 +1477,19 @@ Node *prime()
         return left;
 #endif
     }
+    ft_putchar(out, '\n');
+    txt_pos = tokens[exe_pos]->txt_pos;
+    while(txt_pos > 0 && text[txt_pos - 1] != '\n')
+        txt_pos--;
+    while(text[txt_pos] && text[txt_pos] != '\n')
+    {
+        ft_putchar(out, text[txt_pos]);
+        txt_pos++;
+    }
+    ft_putchar(out, '\n');
+    print_space(tokens[exe_pos - 1]->column);
+    ft_putstr(out, "^\n");
+    ft_printf(err, "Error: Unexpected %s in line '%d'\n", type_to_string(tokens[exe_pos]->type), tokens[exe_pos]->line);
    
     return NULL;
 }
