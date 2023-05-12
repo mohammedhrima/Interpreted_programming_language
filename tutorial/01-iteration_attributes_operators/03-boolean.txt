@@ -1,8 +1,0 @@
-value = true
-output("value is: ", value, "\n")
-value = false
-output("value is: ", value, "\n\n")
-
-// type
-output("test type:\n")
-output(value.type, "\n")
