@@ -9,9 +9,9 @@
 ```bash
   ./run.sh 
 ```
-- then run a.out
+- then run mini executable
 ```bash
-  ./a.out path_to_your_file.txt
+  ./mini path_to_your_file.txt
 ```
 
 ## Introduction
