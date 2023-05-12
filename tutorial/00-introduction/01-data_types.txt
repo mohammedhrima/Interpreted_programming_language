@@ -7,7 +7,7 @@ of text is also a comment X'D
 
 num = 123
 output("num is ", num, "\n")
-output("how about this num is ", num, " and has type ", num.type)
+output("how about this num is ", num, " and has type ", num.type, "\n")
 
 
 str = "hello world"
