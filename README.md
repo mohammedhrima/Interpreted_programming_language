@@ -401,7 +401,7 @@
         func sayHi(str):
             output("hello ",str, "\n")
 
-        sayHi("Mohammed")
+        sayHi("Kidoo")
     ```
     - return keyword:
     ```python
