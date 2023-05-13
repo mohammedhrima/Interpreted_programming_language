@@ -11,7 +11,7 @@
 ```
 - then run mini executable
 ```bash
-  ./mini path_to_your_file.txt
+  ./mini 'file.txt'
 ```
 
 ## Introduction
