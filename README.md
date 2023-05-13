@@ -7,7 +7,7 @@
 
 - installation
 ```bash
-  git clone git@github.com:mohammedhrima/mini_programing_language.git && cd mini_programing_language
+  git clone https://github.com/mohammedhrima/mini_programing_language.git && cd mini_programing_language
 ```
 ```bash
   ./install.sh 
