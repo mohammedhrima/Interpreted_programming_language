@@ -3,9 +3,12 @@
 - I've also borrow some attributes from javascript X'D
 - You can check the tutorial for more details
 
-## How to run
+## How to use
 
 - installation
+```bash
+  git clone git@github.com:mohammedhrima/mini_programing_language.git
+```
 ```bash
   ./install.sh 
 ```
