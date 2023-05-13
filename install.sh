@@ -1,27 +1,16 @@
-folder_name="mini"  # Specify the name of the folder
-
-# Construct the path to the folder within the home directory
-folder_path="$HOME/$folder_name"
-
-# Create the folder
-mkdir -p "$folder_path"
-
-# Check if the folder was created successfully
-
-
 # Get the name of the operating system
 OS=$(uname)
 # Check if the operating system is macOS
 if [[ "$OS" == "Darwin" ]]; then
     # if [[ compiler.c -nt exe ]]; then
-    gcc -fsanitize=address -fsanitize=null -g3 -O2 compiler.c -o exe
+    gcc -fsanitize=address -fsanitize=null -g3 -O2 compiler.c -o mini
     # fi
       # ./exe $1
 # Check if the operating system is Ubuntu
 elif [[ "$OS" == "Linux" ]] && grep -q "Ubuntu" /etc/os-release; then
     export LSAN_OPTIONS=detect_leaks=0
     if [[ compiler.c -nt exe ]]; then
-      gcc -Wall -Werror -Wextra -fsanitize=address -fsanitize=null -g3 -O2 compiler.c -o exe
+      gcc -Wall -Werror -Wextra -fsanitize=address -fsanitize=null -g3 -O2 compiler.c -o mini
     fi
       ./exe $1
 else
@@ -35,31 +24,30 @@ for dir in ./*.dSYM/; do
   fi
 done
 
-mv ./exe ~/mini
+#!/bin/bash
 
-command_alias="mini"     # Specify the alias name
-command_to_alias="~/mini/exe"   # Specify the command to be aliased
+# Create the 'mini' folder in the home directory if it doesn't exist
+mkdir -p "$HOME/mini"
 
-# Function to check if alias exists in the given file
-check_alias_exists() {
-    grep -q "alias $1=" "$2"
-}
+# Move the file './mini' to the 'mini' folder
+mv ./mini "$HOME/mini"
 
-# Check if ~/.zshrc exists and alias doesn't exist, then add it
-if [ -f "$HOME/.zshrc" ] && ! check_alias_exists "$command_alias" "$HOME/.zshrc"; then
-    echo "Adding alias to ~/.zshrc"
-    echo "alias $command_alias=\"$command_to_alias\"" >> "$HOME/.zshrc"
+# Add the 'mini' folder to the PATH environment variable for Linux
+if ! grep -qxF 'export PATH="$HOME/mini:$PATH"' "$HOME/.bashrc"; then
+  echo 'export PATH="$HOME/mini:$PATH"' >> "$HOME/.bashrc"
 fi
 
-# Check if ~/.bashrc exists and alias doesn't exist, then add it
-if [ -f "$HOME/.bashrc" ] && ! check_alias_exists "$command_alias" "$HOME/.bashrc"; then
-    echo "Adding alias to ~/.bashrc"
-    echo "alias $command_alias=\"$command_to_alias\"" >> "$HOME/.bashrc"
+# Add the 'mini' folder to the PATH environment variable for macOS with bash
+if ! grep -qxF 'export PATH="$HOME/mini:$PATH"' "$HOME/.bash_profile"; then
+  echo 'export PATH="$HOME/mini:$PATH"' >> "$HOME/.bash_profile"
 fi
 
-# Source the appropriate rc file if it exists
-if [ -f "$HOME/.zshrc" ]; then
-    source "$HOME/.zshrc"
-elif [ -f "$HOME/.bashrc" ]; then
-    source "$HOME/.bashrc"
+# Add the 'mini' folder to the PATH environment variable for macOS with zsh and ohmyzsh
+if [ "${SHELL##*/}" = "zsh" ]; then
+  if [ -n "$ZSH" ] && ! grep -qxF 'export PATH="$HOME/mini:$PATH"' "$ZSH/custom.zsh"; then
+    echo 'export PATH="$HOME/mini:$PATH"' >> "$ZSH/custom.zsh"
+  elif ! grep -qxF 'export PATH="$HOME/mini:$PATH"' "$HOME/.zshrc"; then
+    echo 'export PATH="$HOME/mini:$PATH"' >> "$HOME/.zshrc"
+  fi
 fi
+

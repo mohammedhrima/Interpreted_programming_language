@@ -928,19 +928,22 @@ void build_tokens()
             txt_pos++;
             continue;
         }
-        ft_putchar(out, '\n');
-        while(txt_pos > 0 && text[txt_pos - 1] != '\n')
-            txt_pos--;
-        int i = txt_pos;
-        while(text[txt_pos] && text[txt_pos] != '\n')
+        if(text[txt_pos])
         {
-            ft_putchar(out, text[txt_pos]);
-            txt_pos++;
+            ft_putchar(out, '\n');
+            while(txt_pos > 0 && text[txt_pos - 1] != '\n')
+                txt_pos--;
+            int i = txt_pos;
+            while(text[txt_pos] && text[txt_pos] != '\n')
+            {
+                ft_putchar(out, text[txt_pos]);
+                txt_pos++;
+            }
+            ft_putchar(out, '\n');
+            print_space(txt_pos - i);
+            ft_putstr(out, "^\n");
+            ft_printf(err, "Syntax error\n");
         }
-        ft_putchar(out, '\n');
-        print_space(txt_pos - i);
-        ft_putstr(out, "^\n");
-        ft_printf(err, "Syntax error\n");
         // ft_printf(err, "Unknown value s:'%s', c:'%c', d:'%d' \n", text + txt_pos, text[txt_pos], text[txt_pos]);
     }
     new_token(eof_);
