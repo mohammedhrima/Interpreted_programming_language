@@ -220,6 +220,30 @@ int ft_strcmp(char *s1, char *s2)
         i++;
     return ((unsigned char)s1[i] - (unsigned char)s2[i]);
 }
+char	*ft_strstr(char *from, char *to_find)
+{
+	int	i;
+	int	k;
+	int	j;
+
+	if (!from || !to_find)
+		return (NULL);
+	i = 0;
+	while (from[i])
+	{
+		k = i;
+		j = 0;
+		while (from[k] == to_find[j] && to_find[j] && from[k])
+		{
+			k++;
+			j++;
+		}
+		if (!to_find[j])
+			return (from + i);
+		i++;
+	}
+	return (NULL);
+}
 char **split(char *str, char *spliter)
 {
     int i = 0;
@@ -2731,9 +2755,13 @@ int main(int argc, char **argv)
     // printf("\\\\                \nn is %d\n", n);
     // exit(0);
     if (argc == 1)
-        ft_printf(err, "expected file to run argc: %d\n", argc);
+        ft_printf(err, "expected file that ends with .mini to run\n");
+    if (ft_strlen(ft_strstr(argv[1], ".mini")) != ft_strlen(".mini"))
+		ft_printf(err, "expected file that ends with .mini");
+
     FILE *fp = NULL;
     long file_size = 0;
+
 
     // open file and read it and feed the text
     fp = fopen(argv[1], "r");

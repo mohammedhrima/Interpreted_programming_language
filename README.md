@@ -5,13 +5,13 @@
 
 ## How to run
 
-- run bash script to build the executable
+- installation
 ```bash
-  ./run.sh 
+  ./install.sh 
 ```
-- then run mini executable
+- then run command
 ```bash
-  ./mini 'file.txt'
+  mini 'file.mini'
 ```
 
 ## Introduction
