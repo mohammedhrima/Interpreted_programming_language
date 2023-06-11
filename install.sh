@@ -33,16 +33,16 @@ mkdir -p "$HOME/mini"
 mv ./mini "$HOME/mini"
 
 # Add the 'mini' folder to the PATH environment variable for Linux
-if ! grep -qxF 'export PATH="$HOME/mini:$PATH"' "$HOME/.bashrc"; then
-  echo 'export PATH="$HOME/mini:$PATH"' >> "$HOME/.bashrc"
-  source "~/.bashrc"
+if ! grep -qxF 'export PATH="$HOME/mini:$PATH"' "$HOME/.bash_profile"; then
+  echo 'export PATH="$HOME/mini:$PATH"' >> "$HOME/.bash_profile"
+  source "$HOME/.bash_profile"
 fi
 
 # Add the 'mini' folder to the PATH environment variable for macOS with zsh and ohmyzsh
 if [ "${SHELL##*/}" = "zsh" ]; then
   if ! grep -qxF 'export PATH="$HOME/mini:$PATH"' "$HOME/.zshrc"; then
     echo 'export PATH="$HOME/mini:$PATH"' >> "$HOME/.zshrc"
-    source "~/.zshrc"
+    source "$HOME/.zshrc"
   fi
 fi
 
