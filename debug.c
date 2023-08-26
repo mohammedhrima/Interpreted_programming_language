@@ -242,6 +242,11 @@ void output(Token *token)
             ft_putstr(fd, "(void)\n");
             break;
         }
+        case func_dec_:
+        {
+            ft_fprintf(out, "function declaration has name: %s\n", token->name);
+            break;
+        }
         default:
         {
             ft_putstr(err, "Error in output can't output ");
@@ -374,6 +379,6 @@ void visualize_variables(void)
             i++;
         }
     }
-#endif
     ft_fprintf(out, "\n");
+#endif
 }

@@ -17,7 +17,7 @@
 #define in STDIN_FILENO
 #define out STDOUT_FILENO
 #define err STDERR_FILENO
-#define DEBUG 1
+#define DEBUG 0
 
 // typedefs
 typedef struct Node Node;

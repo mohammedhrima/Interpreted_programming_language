@@ -6,7 +6,7 @@
 /*   By: mhrima <mhrima@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/08/21 07:55:18 by mhrima            #+#    #+#             */
-/*   Updated: 2023/08/21 07:57:43 by mhrima           ###   ########.fr       */
+/*   Updated: 2023/08/26 05:56:26 by mhrima           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,7 +33,7 @@ char	*ft_substr(char *string, unsigned int start, size_t len)
 		start++;
 		i++;
 	}
-	free(s1);
+	// free(s1);
 	ptr[i] = '\0';
 	return (ptr);
 }

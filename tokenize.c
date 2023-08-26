@@ -50,7 +50,6 @@ Token *new_token(Type type)
                 else if (ft_strcmp(value, "false") == 0)
                     new->boolean = false;
             }
-            // free(value);
         }
         else
             new->name = value;

@@ -1,2 +1,0 @@
-str = "abcdefghab"
-output(str.trim("ab"))    

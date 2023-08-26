@@ -1,7 +1,9 @@
 - I tried to build a mini programming language that has syntax similar to python with C
 - And redo some exercices from 42pool and Libft project with it
+- I've also borrow some attributes from javascript X'D
 - You can check the tutorial for more details
-- This project was done for fun
+- This project was for fun
+- But I enjoyed working on it, It was a great challenge
 
 ## How to use
 
@@ -13,11 +15,11 @@
   cd mini_programing_language
 ```
 ```bash
-  make
+  ./install.sh 
 ```
 - then run command
 ```bash
-  ./mini file.mini # create a file with .mini extention and write your code on it
+  mini 'file.mini'
 ```
 
 ## Introduction

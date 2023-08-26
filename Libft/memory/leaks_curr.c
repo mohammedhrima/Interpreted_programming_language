@@ -6,7 +6,7 @@
 /*   By: mhrima <mhrima@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/08/21 08:17:32 by mhrima            #+#    #+#             */
-/*   Updated: 2023/08/21 08:17:33 by mhrima           ###   ########.fr       */
+/*   Updated: 2023/08/26 06:01:15 by mhrima           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,7 @@ t_mal	*head(void)
 
 	if (curr.ptr == NULL)
 	{
-		curr.len = 10;
+		curr.len = 100;
 		curr.ptr = malloc(curr.len * sizeof(uintptr_t));
 	}
 	return (&curr);
@@ -102,7 +102,8 @@ void	my_free_all(void)
 	i = 0;
 	while (i < curr->pos)
 	{
-		free((void *)curr->ptr[i]);
+		if(curr->ptr[i])
+			free((void *)curr->ptr[i]);
 		curr->ptr[i] = 0;
 		i++;
 	}

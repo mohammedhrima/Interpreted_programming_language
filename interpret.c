@@ -21,10 +21,9 @@ void access_next_scoop()
     current->prev = tmp;
     scoop++;
 }
-// free memory here, buuuuut be carefull
+
 void exit_current_scoop()
 {
-    // memset(current->variables, 0, 200 * sizeof(Token*)); // free it after
     if (current->prev == NULL)
         ft_fprintf(err, "Error in exiting level\n");
     current = current->prev;
@@ -196,7 +195,7 @@ Value *evaluate(Node *node)
                 undeclared_error(to_assign, "variable");
             array[i] = to_assign;
             i++;
-            array = realloc(array, (i + 1) * sizeof(Token *));
+            array = ft_realloc(array, (i) * sizeof(Token *) ,(i + 1) * sizeof(Token *));
             array[i] = NULL;
         }
         node->token->array = array;
@@ -216,7 +215,7 @@ Value *evaluate(Node *node)
                 ft_fprintf(err, "key '%s', has no valid value\n", to_assign->name);
             object[i] = to_assign;
             i++;
-            object = realloc(object, (i + 1) * sizeof(Token *));
+            object = ft_realloc(object, (i) * sizeof(Token *), (i + 1) * sizeof(Token *));
             object[i] = NULL;
         }
         node->token->object = object;
