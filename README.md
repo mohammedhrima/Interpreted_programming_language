@@ -15,11 +15,11 @@
   cd mini_programing_language
 ```
 ```bash
-  ./install.sh 
+  make
 ```
 - then run command
 ```bash
-  mini 'file.mini'
+  ./mini your_file.mini # create a file with .mini as extention
 ```
 
 ## Introduction
