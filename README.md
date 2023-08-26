@@ -2,6 +2,8 @@
 - And redo some exercices from 42pool and Libft project with it
 - I've also borrow some attributes from javascript X'D
 - You can check the tutorial for more details
+- This project was for fun
+- But I enjoyed working on it, It was a great challenge
 
 ## How to use
 
@@ -417,5 +419,4 @@
         output("2 + 5 is ", add(2, 5), "\n")
     ```
 
-- I do believe this mini programming language X'D isn't the greatest in the world,
-- but I enjoyed working on it, It was a great challenge
+
