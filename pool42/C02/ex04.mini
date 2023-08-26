@@ -1,4 +1,0 @@
-str = "12345"
-res = str.ischar
-
-output(res, "\n")

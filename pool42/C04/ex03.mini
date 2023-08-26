@@ -1,2 +1,0 @@
-ft_atoi(str):
-    return str.tonum

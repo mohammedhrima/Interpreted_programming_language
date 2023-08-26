@@ -1,3 +1,0 @@
-str = "ABcD"
-
-output(str.tolow)

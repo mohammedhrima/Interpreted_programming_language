@@ -1,4 +1,0 @@
-s = "abcdefghi"
-
-for x in range(0, s.len):
-    output("s[",x,"] is ", s[x], "\n")

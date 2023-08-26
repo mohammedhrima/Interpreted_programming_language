@@ -1,2 +1,0 @@
-n = range(10, 25)
-output(n)

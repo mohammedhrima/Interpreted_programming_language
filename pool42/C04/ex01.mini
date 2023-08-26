@@ -1,5 +1,0 @@
-func ft_putstr(str):
-    i = 0
-    while i < str.len:
-        output(str[i])
-        i += 1

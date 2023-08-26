@@ -1,5 +1,0 @@
-x = "abcdefghijklmnopqrstuvwxyz"
-i = 0
-while i < x.len:
-    output(x[i])
-    i += 1

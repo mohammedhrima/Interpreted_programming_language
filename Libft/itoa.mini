@@ -1,3 +1,0 @@
-num = 10
-str = num.tochar
-output("str is ", str, " has type: ", str.type)

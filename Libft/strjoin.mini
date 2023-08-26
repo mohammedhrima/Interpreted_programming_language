@@ -1,5 +1,0 @@
-func strjoin(left, right):
-    return left + right
-
-res = strjoin("abcdef", "ghijklm")
-output(res)

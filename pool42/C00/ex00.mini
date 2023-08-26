@@ -1,4 +1,0 @@
-func ft_putchar(c):
-    output(c)
-
-ft_putchar("g")

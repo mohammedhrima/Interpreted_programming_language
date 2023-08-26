@@ -1,6 +1,0 @@
-func strjoin(left, right):
-    return left + right
-
-str1 = "hello"
-str2 = " world"
-output(strjoin(str1, str2))

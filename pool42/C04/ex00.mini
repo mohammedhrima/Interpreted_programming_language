@@ -1,4 +1,0 @@
-func ft_strlen(str):
-    return str.len
-
-n = ft_strlen("hello")

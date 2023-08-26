@@ -1,3 +1,0 @@
-str = "ABCDE"
-res = str.isup
-output(res)
