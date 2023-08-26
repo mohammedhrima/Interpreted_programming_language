@@ -2,8 +2,7 @@
 - And redo some exercices from 42pool and Libft project with it
 - I've also borrow some attributes from javascript X'D
 - You can check the tutorial for more details
-- This project was for fun
-- But I enjoyed working on it, It was a great challenge
+- This project was made for fun
 
 ## How to use
 
