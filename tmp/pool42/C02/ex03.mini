@@ -1,0 +1,4 @@
+
+str = "123"
+res = str.isnum
+output(res)

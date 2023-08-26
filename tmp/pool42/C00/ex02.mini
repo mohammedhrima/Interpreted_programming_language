@@ -1,0 +1,6 @@
+x = "abcdefghijklmnopqrstuvwxyz"
+i = x.len
+
+while i > 0:
+    i -= 1
+    output(x[i])

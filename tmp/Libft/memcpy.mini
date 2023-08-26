@@ -1,0 +1,13 @@
+func memcpy(src, dest):
+    i = 0
+    output("src len is: ", src.len, "\n")
+    while i < src.len and i < dest.len:
+        dest[i] = src[i]
+        i += 1
+    while i < src.len:
+        dest = dest + [src[i]]
+        i += 1
+    return dest
+
+res = memcpy([0, 1, 5], [7,8,9,10])
+output(res)
