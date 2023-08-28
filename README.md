@@ -3,6 +3,7 @@
 - I've also borrow some attributes from javascript X'D
 - You can check the tutorial for more details
 - This project was made for fun
+- The folder /test_mini contains lot of examples, feel free to check it
 
 ## How to use
 
