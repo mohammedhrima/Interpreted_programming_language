@@ -18,7 +18,7 @@
 ```
 - then run command
 ```bash
-  ./mini your_file.mini # create a file with .mini as extention
+  ./mini path_to_your_file.mini # create a file with .mini as extention
 ```
 
 ## Introduction

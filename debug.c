@@ -95,7 +95,7 @@ char *type_to_string(Type type)
     return NULL;
 }
 
-void undeclared_error(Token *token, char *type)
+void undeclared_error(char *location, Token *token, char *type)
 {
     ft_putchar(out, '\n');
     txt_pos = token->txt_pos;
@@ -109,7 +109,7 @@ void undeclared_error(Token *token, char *type)
     ft_putchar(out, '\n');
     print_space(token->column - ft_strlen(token->name));
     ft_putstr(out, "^\n");
-    ft_fprintf(err, "Error: Undeclared %s in line '%d'\n", type, token->line);
+    ft_fprintf(err, "Error %s: Undeclared %s in line '%d'\n", location, type, token->line);
 }
 
 int numberOfDigits(long long n)
@@ -125,33 +125,15 @@ int numberOfDigits(long long n)
 
 void printFixedPoint(long number, int exponent)
 {
-    if (exponent < 0)
-    {
-        // Case for very large numbers
-        ft_printf("Error: Exponent is negative, cannot handle this scenario.");
-        return;
-    }
-
-    // Determine integer part and fractional part
-
     long int_part = exponent ? number / pow_ten(exponent) : number;
     long frac_part = exponent ? number % pow_ten(exponent) : 0;
-
-    // Print integer part
     ft_putnbr(out, int_part);
-    // printf("%lld.", int_part);
-
-    // Print fractional part with leading zeros
-
     if (exponent)
     {
         for (int i = 0; i < exponent - numberOfDigits(frac_part); i++)
-        {
             ft_putchar(out, '0');
-        }
         ft_putnbr(out, frac_part);
     }
-    // printf("%lld\n", frac_part);
 }
 
 // built in functions
@@ -164,7 +146,12 @@ void output(Token *token)
         switch (token->type)
         {
         case identifier_:
-            undeclared_error(token, "variable");
+#if DEBUG
+        ft_printf("identifier: has name %s\n", token->name);
+#else
+        undeclared_error("output", token, "variable");
+#endif
+        break;
         case characters_:
         {
             char *string = token->characters;

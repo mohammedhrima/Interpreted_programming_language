@@ -12,7 +12,6 @@
 #include <assert.h>
 #include <string.h>
 
-
 // macros
 #define in STDIN_FILENO
 #define out STDOUT_FILENO
@@ -30,7 +29,7 @@ typedef enum Type Type;
 char *type_to_string(Type type);
 Token *evaluate(Node *node);
 void visualize_variables(void);
-void undeclared_error(Token *token, char *type);
+void undeclared_error(char *location, Token *token, char *type);
 void see_token(Token *token);
 void build_tokens();
 Token *new_token(Type type);
@@ -53,7 +52,6 @@ Node *sign();       // sign  -
 Node *iteration();  // .len ... [0]
 Node *prime();      // primary
 Node *parents();    // ()
-
 
 enum Type
 {

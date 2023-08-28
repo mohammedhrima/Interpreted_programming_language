@@ -6,7 +6,7 @@
 /*   By: mhrima <mhrima@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/08/21 07:54:52 by mhrima            #+#    #+#             */
-/*   Updated: 2023/08/21 07:57:09 by mhrima           ###   ########.fr       */
+/*   Updated: 2023/08/28 06:50:43 by mhrima           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,11 +14,11 @@
 
 void ft_strcpy(char *destination, char *source)
 {
-    int len = ft_strlen(destination);
+    // int len = ft_strlen(destination);
     int i = 0;
-    while (destination && source && source[i])
+    while (source[i])
     {
-        destination[len + i] = source[i];
+        destination[i] = source[i];
         i++;
     }
 }

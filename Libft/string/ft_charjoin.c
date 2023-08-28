@@ -6,7 +6,7 @@
 /*   By: mhrima <mhrima@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/08/21 07:54:28 by mhrima            #+#    #+#             */
-/*   Updated: 2023/08/26 05:55:52 by mhrima           ###   ########.fr       */
+/*   Updated: 2023/08/28 07:00:00 by mhrima           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,8 @@
 char *ft_charjoin(char *string, char c)
 {
     char *res = ft_calloc(ft_strlen(string) + 2, sizeof(char));
+    if(string)
+        ft_strcpy(res, string);
     res[ft_strlen(res)] = c;
-    // free(string);
     return res;
 }

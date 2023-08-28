@@ -2,9 +2,9 @@ func substr(string, start, lenght):
     res = ""
     i = 0
     while start + i < string.len and i < lenght:
-        output("add: ", string[i], "\n")
+        // output("add: ", string[i], "\n")
         res = res + string[i]
-        output("res is: ", res,"\n")
+        // output("res is: ", res,"\n")
         i += 1 
     return res
 

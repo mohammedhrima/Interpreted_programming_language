@@ -6,13 +6,13 @@
 #    By: mhrima <mhrima@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2022/12/24 05:24:40 by mhrima            #+#    #+#              #
-#    Updated: 2023/08/26 00:45:44 by mhrima           ###   ########.fr        #
+#    Updated: 2023/08/28 06:52:14 by mhrima           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 NAME = libft.a
 CC = cc
-CFLAGS = -Wall -Wextra -Werror
+CFLAGS = -Wall -Wextra -Werror -fsanitize=address -g3
 AR = ar rcs
 RM = rm -rf
 OBJDIR = objects
