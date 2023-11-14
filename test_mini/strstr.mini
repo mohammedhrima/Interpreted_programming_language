@@ -2,4 +2,11 @@ func ft_strstr(str, to_find):
     return str.indexof(to_find)
 
 str = "abcdef"
-output(ft_strstr(str, "ef") ,"\n")
+i = ft_strstr(str, "ef")
+
+res = ""
+while i < str.len - 1:
+    res += str[i]
+    i+=1
+    
+output( res ,"\n")

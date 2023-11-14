@@ -1,2 +1,0 @@
-func ft_putnbr(num):
-    output(num)

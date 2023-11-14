@@ -91,6 +91,7 @@ char *type_to_string(Type type)
     ft_putstr(err, "Error: type not found '");
     ft_putnbr(err, type);
     ft_putstr(err, "'\n");
+    my_free_all();
     exit(1);
     return NULL;
 }
@@ -239,6 +240,7 @@ void output(Token *token)
             ft_putstr(err, "Error in output can't output ");
             ft_putstr(err, type_to_string(token->type));
             ft_putstr(err, "\n");
+            my_free_all();
             exit(1);
         }
         }
@@ -320,6 +322,7 @@ void see_token(Token *token)
             {
                 ft_putstr(err, "Unkown token type: ");
                 ft_putstr(err, type_to_string(token->type));
+                my_free_all();
                 exit(1);
             }
         }

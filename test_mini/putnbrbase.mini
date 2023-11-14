@@ -1,13 +1,2 @@
-func ft_putnbr_base(num, base):
-    n = base.len
-    if num < 0:
-        output("-")
-        num = -num
-    if num >= 0 and num < n:
-        output(base[num])
-    else:
-        ft_putnbr_base(num / n, base)
-        ft_putnbr_base(num % n, base)
-
-
-ft_putnbr_base(16, "0123456789ABCDEF")
+num = 12
+output(num.base("0123456789ABCDEF"))

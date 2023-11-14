@@ -1,4 +1,4 @@
 str1 = input("enter string: ")
-str2 = input("enter  substring: ")
+str2 = input("enter substring: ")
 
 output(str1.startswith(str2))

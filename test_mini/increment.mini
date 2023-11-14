@@ -1,4 +1,4 @@
 n = 0
 while n < 10:
-    output(n)
+    output(n, "\n")
     n += 1

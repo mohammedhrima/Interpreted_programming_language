@@ -1,2 +1,5 @@
-ft_atoi(str):
+func ft_atoi(str):
     return str.tonum
+
+str = input("enter a number: ")
+output(ft_atoi(str) * 2, "\n")

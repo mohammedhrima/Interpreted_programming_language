@@ -1,2 +1,3 @@
-str = input("enter string: ")
-output(str.indexof("a"))
+string = input("enter string: ")
+to_find = input("enter substring: ")
+output(string.indexof(to_find))

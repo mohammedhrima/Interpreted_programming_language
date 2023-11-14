@@ -105,7 +105,7 @@ Value *evaluate(Node *node)
         // ft_printf(out, "Do assignemnt between %k and %k\n", left, right);
         // skip this error for function because i can set global variable to idenitifer from params
         if (right->type == identifier_)
-            undeclared_error("assign",right, "variable");
+            undeclared_error("assign", right, "variable");
         if (left->type != identifier_ && left->type != right->type)
             ft_fprintf(err, "can't assign '%s' type %s to '%s' type %s in line %d\n", left->name, type_to_string(left->type), right->name, type_to_string(right->type), left->line);
 
@@ -192,10 +192,10 @@ Value *evaluate(Node *node)
         {
             Value *to_assign = evaluate(head[i]);
             if (to_assign->type == identifier_)
-                undeclared_error("array:",to_assign, "variable");
+                undeclared_error("array:", to_assign, "variable");
             array[i] = to_assign;
             i++;
-            array = ft_realloc(array, (i) * sizeof(Token *) ,(i + 1) * sizeof(Token *));
+            array = ft_realloc(array, (i) * sizeof(Token *), (i + 1) * sizeof(Token *));
             array[i] = NULL;
         }
         node->token->array = array;
@@ -232,7 +232,7 @@ Value *evaluate(Node *node)
         Value *right = evaluate(node->right);
 
         if (left->type == identifier_)
-            undeclared_error("math operation",left, "variable");
+            undeclared_error("math operation", left, "variable");
         if (right->type == identifier_)
             undeclared_error("math operation", right, "variable");
         Value *ret = ft_calloc(1, sizeof(Value));
@@ -317,7 +317,7 @@ Value *evaluate(Node *node)
         Value *left = evaluate(node->left);
         Value *right = evaluate(node->right);
         if (left->type == identifier_)
-            undeclared_error("operaned assign",left, "variable");
+            undeclared_error("operaned assign", left, "variable");
         if (right->type == identifier_)
             undeclared_error("operaned assign", right, "variable");
         Value *ret = ft_calloc(1, sizeof(Value));
@@ -703,7 +703,7 @@ Value *evaluate(Node *node)
         // find function
         Node *existed_func = get_func(node->token->name);
         if (existed_func == NULL)
-            undeclared_error("function call",node->token, "function");
+            undeclared_error("function call", node->token, "function");
         Node **existed_params = existed_func->left->token->array_head;
         Node **new_params = node->left->token->array_head;
         // access next scoop
@@ -1129,6 +1129,8 @@ Value *evaluate(Node *node)
                 Value *ret = ft_calloc(1, sizeof(Value));
                 ret->type = array_;
                 ret->array = NULL;
+                // printf("split: %s, by: '%s'\n", left->characters, spliter_value->characters);
+                // exit(0);
                 char *spliter = spliter_value->characters;
                 char **string_array = ft_split(left->characters, spliter);
                 int i = 0;

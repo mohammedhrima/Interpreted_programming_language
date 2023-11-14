@@ -6,12 +6,12 @@
 #    By: mhrima <mhrima@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2022/12/24 05:24:40 by mhrima            #+#    #+#              #
-#    Updated: 2023/08/26 02:36:04 by mhrima           ###   ########.fr        #
+#    Updated: 2023/11/14 13:25:25 by mhrima           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 CC = cc
-CFLAGS = -fsanitize=address -g3 #-Wall -Wextra -Werror
+CFLAGS = #-fsanitize=address -g3 #-Wall -Wextra -Werror
 RM = rm -rf
 OBJDIR = objects
 LIB = Libft/libft.a
@@ -48,6 +48,7 @@ fclean: clean
 	make -C Libft fclean
 
 re: fclean all
+	make re -C Libft
 
 #cc -c main.c -o objects/main.o
 #cc objects/main.o -L./Libft -l:libft.a -lm -o exe
