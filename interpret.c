@@ -271,6 +271,8 @@ Value *evaluate(Node *node)
             case mod_:
                 number = left->number % right->number;
                 break;
+            default:
+                break;
             }
 
             ret->type = number_;
@@ -363,6 +365,8 @@ Value *evaluate(Node *node)
             case mod_:
             case mod_assign_:
                 number = left->number % right->number;
+                break;
+            default:
                 break;
             }
 

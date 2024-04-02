@@ -8,12 +8,7 @@
 ## How to use
 
 - installation
-```bash
-  git clone https://github.com/mohammedhrima/mini_programing_language.git
-```
-```bash
-  cd mini_programing_language
-```
++ clone the repo cd to it
 ```bash
   make
 ```
